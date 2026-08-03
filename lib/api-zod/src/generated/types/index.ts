@@ -6,8 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './addToCartRequest';
 export * from './adminMe';
 export * from './adminMerchant';
+export * from './cart';
+export * from './cartItem';
 export * from './coupon';
 export * from './couponValidationResult';
 export * from './createCouponRequest';
@@ -19,6 +22,10 @@ export * from './createGroupBuyCampaignRequest';
 export * from './createMerchantProductRequest';
 export * from './createMerchantStoreRequest';
 export * from './createPromoDealRequest';
+export * from './createWithdrawalRequest';
+export * from './customerOrder';
+export * from './customerOrderDetail';
+export * from './customerOrderItem';
 export * from './dealModerationRequest';
 export * from './dealModerationRequestStatus';
 export * from './feeRule';
@@ -33,6 +40,7 @@ export * from './joinGroupBuyRequest';
 export * from './joinGroupBuyRequestPaymentMethod';
 export * from './listMarketplaceProductsParams';
 export * from './listPromoDealsParams';
+export * from './listWalletTransactionsParams';
 export * from './marketplaceCategory';
 export * from './marketplaceDeal';
 export * from './marketplaceProduct';
@@ -46,6 +54,7 @@ export * from './moderationRequestStatus';
 export * from './promoDeal';
 export * from './purchaseGiftCardRequest';
 export * from './purchaseGiftCardRequestPaymentMethod';
+export * from './updateCartItemRequest';
 export * from './updateCouponRequest';
 export * from './updateCouponRequestStatus';
 export * from './updateFeeRuleRequest';
@@ -57,3 +66,5 @@ export * from './updateMerchantStatusRequestStatus';
 export * from './updatePromoDealRequest';
 export * from './validateCouponRequest';
 export * from './walletSummary';
+export * from './walletTransaction';
+export * from './withdrawalRequest';

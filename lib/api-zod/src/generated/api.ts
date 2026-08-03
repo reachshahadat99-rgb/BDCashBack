@@ -78,7 +78,6 @@ export const listMarketplaceProductsQueryLimitDefault = 12;
 export const listMarketplaceProductsQueryLimitMax = 50;
 
 
-
 export const ListMarketplaceProductsQueryParams = zod.object({
   "category": zod.coerce.string().optional(),
   "search": zod.coerce.string().optional(),
@@ -110,6 +109,231 @@ export const GetWalletSummaryResponse = zod.object({
   "pendingCashback": zod.number(),
   "availableCashback": zod.number(),
   "rewardPoints": zod.number()
+})
+
+
+/**
+ * @summary List wallet transactions for the signed-in user
+ */
+export const listWalletTransactionsQueryLimitDefault = 20;
+export const listWalletTransactionsQueryLimitMax = 100;
+
+
+export const ListWalletTransactionsQueryParams = zod.object({
+  "limit": zod.coerce.number().min(1).max(listWalletTransactionsQueryLimitMax).default(listWalletTransactionsQueryLimitDefault)
+})
+
+export const ListWalletTransactionsResponseItem = zod.object({
+  "id": zod.string(),
+  "type": zod.string(),
+  "amount": zod.number(),
+  "description": zod.string(),
+  "referenceId": zod.string().nullable(),
+  "referenceType": zod.string().nullable(),
+  "createdAt": zod.string()
+})
+export const ListWalletTransactionsResponse = zod.array(ListWalletTransactionsResponseItem)
+
+/**
+ * @summary Request a withdrawal of available balance
+ */
+export const requestWithdrawalBodyAmountMin = 0.01;
+export const RequestWithdrawalBody = zod.object({
+  "amount": zod.number().min(requestWithdrawalBodyAmountMin),
+  "bankName": zod.string(),
+  "accountNumber": zod.string(),
+  "notes": zod.string().optional()
+})
+
+export const RequestWithdrawalResponse = zod.object({
+  "id": zod.string(),
+  "amount": zod.number(),
+  "status": zod.string(),
+  "bankName": zod.string(),
+  "accountNumber": zod.string(),
+  "notes": zod.string(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Get the signed-in user's cart
+ */
+export const GetCartResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "productId": zod.string(),
+  "storeId": zod.string(),
+  "name": zod.string(),
+  "imageUrl": zod.string(),
+  "price": zod.number(),
+  "originalPrice": zod.number(),
+  "cashbackPercent": zod.number(),
+  "cashbackAmount": zod.number(),
+  "quantity": zod.number()
+})),
+  "subtotal": zod.number(),
+  "cashbackAmount": zod.number(),
+  "itemsCount": zod.number()
+})
+
+
+/**
+ * @summary Clear all items from the cart
+ */
+export const ClearCartResponse = zod.void()
+
+
+/**
+ * @summary Add a product to the cart
+ */
+export const AddCartItemBody = zod.object({
+  "productId": zod.string(),
+  "quantity": zod.number()
+})
+
+export const AddCartItemResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "productId": zod.string(),
+  "storeId": zod.string(),
+  "name": zod.string(),
+  "imageUrl": zod.string(),
+  "price": zod.number(),
+  "originalPrice": zod.number(),
+  "cashbackPercent": zod.number(),
+  "cashbackAmount": zod.number(),
+  "quantity": zod.number()
+})),
+  "subtotal": zod.number(),
+  "cashbackAmount": zod.number(),
+  "itemsCount": zod.number()
+})
+
+
+/**
+ * @summary Update quantity of a cart item
+ */
+export const UpdateCartItemParams = zod.object({
+  "itemId": zod.coerce.string()
+})
+
+export const UpdateCartItemBody = zod.object({
+  "quantity": zod.number()
+})
+
+export const UpdateCartItemResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "productId": zod.string(),
+  "storeId": zod.string(),
+  "name": zod.string(),
+  "imageUrl": zod.string(),
+  "price": zod.number(),
+  "originalPrice": zod.number(),
+  "cashbackPercent": zod.number(),
+  "cashbackAmount": zod.number(),
+  "quantity": zod.number()
+})),
+  "subtotal": zod.number(),
+  "cashbackAmount": zod.number(),
+  "itemsCount": zod.number()
+})
+
+
+/**
+ * @summary Remove an item from the cart
+ */
+export const RemoveCartItemParams = zod.object({
+  "itemId": zod.coerce.string()
+})
+
+export const RemoveCartItemResponse = zod.void()
+
+
+/**
+ * @summary Place an order from the current cart
+ */
+export const CheckoutResponse = zod.object({
+  "id": zod.string(),
+  "status": zod.string(),
+  "total": zod.number(),
+  "cashbackAmount": zod.number(),
+  "itemsCount": zod.number(),
+  "deliveredAt": zod.string().nullable(),
+  "completedAt": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary List the signed-in user's orders
+ */
+export const ListOrdersResponseItem = zod.object({
+  "id": zod.string(),
+  "status": zod.string(),
+  "total": zod.number(),
+  "cashbackAmount": zod.number(),
+  "itemsCount": zod.number(),
+  "deliveredAt": zod.string().nullable(),
+  "completedAt": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+export const ListOrdersResponse = zod.array(ListOrdersResponseItem)
+
+
+/**
+ * @summary Get a single order with its line items
+ */
+export const GetOrderParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetOrderResponse = zod.object({
+  "id": zod.string(),
+  "status": zod.string(),
+  "total": zod.number(),
+  "cashbackAmount": zod.number(),
+  "itemsCount": zod.number(),
+  "deliveredAt": zod.string().nullable(),
+  "completedAt": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string(),
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "productId": zod.string(),
+  "storeId": zod.string(),
+  "name": zod.string(),
+  "imageUrl": zod.string(),
+  "price": zod.number(),
+  "originalPrice": zod.number(),
+  "cashbackPercent": zod.number(),
+  "cashbackAmount": zod.number(),
+  "quantity": zod.number()
+}))
+})
+
+
+/**
+ * @summary Cancel an order (only allowed before it is shipped)
+ */
+export const CancelOrderParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const CancelOrderResponse = zod.object({
+  "id": zod.string(),
+  "status": zod.string(),
+  "total": zod.number(),
+  "cashbackAmount": zod.number(),
+  "itemsCount": zod.number(),
+  "deliveredAt": zod.string().nullable(),
+  "completedAt": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
 })
 
 
@@ -338,7 +562,6 @@ export const joinGroupBuyDealBodyAddressMax = 500;
 export const joinGroupBuyDealBodyQuantityMax = 5;
 
 
-
 export const JoinGroupBuyDealBody = zod.object({
   "fullName": zod.string().min(1).max(joinGroupBuyDealBodyFullNameMax),
   "phone": zod.string().min(joinGroupBuyDealBodyPhoneMin).max(joinGroupBuyDealBodyPhoneMax),
@@ -409,7 +632,6 @@ export const ListPublicCouponsResponse = zod.array(ListPublicCouponsResponseItem
  * @summary Validate a coupon against an order subtotal (checkout integration point)
  */
 export const validateCouponBodySubtotalMin = 0;
-
 
 
 export const ValidateCouponBody = zod.object({
@@ -571,7 +793,6 @@ export const createMerchantCouponBodyMinOrderValueMin = 0;
 export const createMerchantCouponBodyMaxUsesMin = 0;
 
 
-
 export const CreateMerchantCouponBody = zod.object({
   "code": zod.string().min(createMerchantCouponBodyCodeMin).max(createMerchantCouponBodyCodeMax),
   "title": zod.string().min(1).max(createMerchantCouponBodyTitleMax),
@@ -616,7 +837,6 @@ export const updateMerchantCouponBodyDiscountValueMin = 0;
 export const updateMerchantCouponBodyMinOrderValueMin = 0;
 
 export const updateMerchantCouponBodyMaxUsesMin = 0;
-
 
 
 export const UpdateMerchantCouponBody = zod.object({
@@ -679,7 +899,6 @@ export const createMerchantDealBodyDescriptionMax = 1000;
 export const createMerchantDealBodyDiscountPercentMax = 95;
 
 
-
 export const CreateMerchantDealBody = zod.object({
   "title": zod.string().min(1).max(createMerchantDealBodyTitleMax),
   "description": zod.string().max(createMerchantDealBodyDescriptionMax).optional(),
@@ -713,7 +932,6 @@ export const UpdateMerchantDealParams = zod.object({
 })
 
 export const updateMerchantDealBodyDiscountPercentMax = 95;
-
 
 
 export const UpdateMerchantDealBody = zod.object({
@@ -771,8 +989,6 @@ export const ListMerchantGroupBuysResponse = zod.array(ListMerchantGroupBuysResp
 export const createMerchantGroupBuyBodyTitleMax = 160;
 
 
-
-
 export const createMerchantGroupBuyBodyCashbackPercentMin = 0;
 export const createMerchantGroupBuyBodyCashbackPercentMax = 100;
 
@@ -780,7 +996,6 @@ export const createMerchantGroupBuyBodyDepositPercentMin = 5;
 export const createMerchantGroupBuyBodyDepositPercentMax = 100;
 
 export const createMerchantGroupBuyBodyMinParticipantsMin = 2;
-
 
 
 export const CreateMerchantGroupBuyBody = zod.object({
@@ -907,7 +1122,6 @@ export const createAdminCouponBodyDiscountValueMin = 0;
 export const createAdminCouponBodyMinOrderValueMin = 0;
 
 export const createAdminCouponBodyMaxUsesMin = 0;
-
 
 
 export const CreateAdminCouponBody = zod.object({
@@ -1105,7 +1319,6 @@ export const createAdminGiftCardBrandBodyNameMax = 120;
 export const createAdminGiftCardBrandBodyDescriptionMax = 500;
 
 
-
 export const CreateAdminGiftCardBrandBody = zod.object({
   "name": zod.string().min(1).max(createAdminGiftCardBrandBodyNameMax),
   "logoUrl": zod.string().optional(),
@@ -1168,7 +1381,6 @@ export const UpdateAdminGiftCardBrandResponse = zod.object({
 export const createAdminGiftCardBodyStockMin = 0;
 
 
-
 export const CreateAdminGiftCardBody = zod.object({
   "brandId": zod.string(),
   "faceValue": zod.number().min(1),
@@ -1195,7 +1407,6 @@ export const UpdateAdminGiftCardParams = zod.object({
 
 
 export const updateAdminGiftCardBodyStockMin = 0;
-
 
 
 export const UpdateAdminGiftCardBody = zod.object({
@@ -1260,7 +1471,6 @@ export const createAdminFeeRuleBodyReturnPeriodDaysMin = 0;
 export const createAdminFeeRuleBodyReturnPeriodDaysMax = 60;
 
 
-
 export const CreateAdminFeeRuleBody = zod.object({
   "categoryId": zod.string(),
   "feePercent": zod.number().min(createAdminFeeRuleBodyFeePercentMin).max(createAdminFeeRuleBodyFeePercentMax),
@@ -1296,7 +1506,6 @@ export const updateAdminFeeRuleBodyReturnPeriodDaysMin = 0;
 export const updateAdminFeeRuleBodyReturnPeriodDaysMax = 60;
 
 
-
 export const UpdateAdminFeeRuleBody = zod.object({
   "feePercent": zod.number().min(updateAdminFeeRuleBodyFeePercentMin).max(updateAdminFeeRuleBodyFeePercentMax).optional(),
   "customerSharePercent": zod.number().min(updateAdminFeeRuleBodyCustomerSharePercentMin).max(updateAdminFeeRuleBodyCustomerSharePercentMax).optional(),
@@ -1313,5 +1522,4 @@ export const UpdateAdminFeeRuleResponse = zod.object({
   "returnPeriodDays": zod.number(),
   "active": zod.boolean()
 })
-
 

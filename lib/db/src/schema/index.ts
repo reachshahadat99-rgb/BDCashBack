@@ -19,3 +19,4 @@
 
 export * from "./marketplace";
 export * from "./platform";
+export * from "./commerce";

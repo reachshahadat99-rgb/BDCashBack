@@ -48,6 +48,108 @@ export interface WalletSummary {
   rewardPoints: number;
 }
 
+export interface WalletTransaction {
+  id: string;
+  type: string;
+  amount: number;
+  description: string;
+  /** @nullable */
+  referenceId: string | null;
+  /** @nullable */
+  referenceType: string | null;
+  createdAt: string;
+}
+
+export interface WithdrawalRequest {
+  id: string;
+  amount: number;
+  status: string;
+  bankName: string;
+  accountNumber: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateWithdrawalRequest {
+  /** @minimum 0.01 */
+  amount: number;
+  bankName: string;
+  accountNumber: string;
+  notes?: string;
+}
+
+export interface CartItem {
+  id: string;
+  productId: string;
+  storeId: string;
+  name: string;
+  imageUrl: string;
+  price: number;
+  originalPrice: number;
+  cashbackPercent: number;
+  cashbackAmount: number;
+  quantity: number;
+}
+
+export interface Cart {
+  items: CartItem[];
+  subtotal: number;
+  cashbackAmount: number;
+  itemsCount: number;
+}
+
+export interface AddToCartRequest {
+  productId: string;
+  quantity: number;
+}
+
+export interface UpdateCartItemRequest {
+  quantity: number;
+}
+
+export interface CustomerOrder {
+  id: string;
+  status: string;
+  total: number;
+  cashbackAmount: number;
+  itemsCount: number;
+  /** @nullable */
+  deliveredAt: string | null;
+  /** @nullable */
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CustomerOrderItem {
+  id: string;
+  productId: string;
+  storeId: string;
+  name: string;
+  imageUrl: string;
+  price: number;
+  originalPrice: number;
+  cashbackPercent: number;
+  cashbackAmount: number;
+  quantity: number;
+}
+
+export interface CustomerOrderDetail {
+  id: string;
+  status: string;
+  total: number;
+  cashbackAmount: number;
+  itemsCount: number;
+  /** @nullable */
+  deliveredAt: string | null;
+  /** @nullable */
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  items: CustomerOrderItem[];
+}
+
 export interface MarketplaceSummary {
   categories: MarketplaceCategory[];
   featuredProducts: MarketplaceProduct[];
@@ -581,7 +683,14 @@ search?: string;
 limit?: number;
 };
 
+export type ListWalletTransactionsParams = {
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+};
+
 export type ListPromoDealsParams = {
 featured?: boolean;
 };
-
