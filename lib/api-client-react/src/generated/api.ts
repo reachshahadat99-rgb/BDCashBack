@@ -6,26 +6,37 @@
  * OpenAPI spec version: 0.1.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
+  CreateMerchantProductRequest,
+  CreateMerchantStoreRequest,
   HealthStatus,
   ListMarketplaceProductsParams,
   MarketplaceCategory,
   MarketplaceProduct,
   MarketplaceSummary,
+  MerchantOrder,
+  MerchantProduct,
+  MerchantStore,
+  MerchantSummary,
+  UpdateMerchantProductRequest,
   WalletSummary
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
-import type { ErrorType } from '../custom-fetch';
+import type { ErrorType , BodyType } from '../custom-fetch';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -433,6 +444,599 @@ export function useGetWalletSummary<TData = Awaited<ReturnType<typeof getWalletS
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetWalletSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMerchantSummaryUrl = () => {
+
+
+
+
+  return `/api/merchant/summary`
+}
+
+/**
+ * @summary Get the signed-in merchant workspace summary
+ */
+export const getMerchantSummary = async ( options?: Parameters<typeof customFetch>[1]): Promise<MerchantSummary> => {
+
+  return customFetch<MerchantSummary>(getGetMerchantSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMerchantSummaryQueryKey = () => {
+    return [
+    `/api/merchant/summary`
+    ] as const;
+    }
+
+
+export const getGetMerchantSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getMerchantSummary>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMerchantSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMerchantSummaryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMerchantSummary>>> = ({ signal }) => getMerchantSummary({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMerchantSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMerchantSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getMerchantSummary>>>
+export type GetMerchantSummaryQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the signed-in merchant workspace summary
+ */
+
+export function useGetMerchantSummary<TData = Awaited<ReturnType<typeof getMerchantSummary>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMerchantSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMerchantSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMerchantStoreUrl = () => {
+
+
+
+
+  return `/api/merchant/store`
+}
+
+/**
+ * @summary Get the signed-in merchant store
+ */
+export const getMerchantStore = async ( options?: Parameters<typeof customFetch>[1]): Promise<MerchantStore> => {
+
+  return customFetch<MerchantStore>(getGetMerchantStoreUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMerchantStoreQueryKey = () => {
+    return [
+    `/api/merchant/store`
+    ] as const;
+    }
+
+
+export const getGetMerchantStoreQueryOptions = <TData = Awaited<ReturnType<typeof getMerchantStore>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMerchantStore>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMerchantStoreQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMerchantStore>>> = ({ signal }) => getMerchantStore({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMerchantStore>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMerchantStoreQueryResult = NonNullable<Awaited<ReturnType<typeof getMerchantStore>>>
+export type GetMerchantStoreQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the signed-in merchant store
+ */
+
+export function useGetMerchantStore<TData = Awaited<ReturnType<typeof getMerchantStore>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMerchantStore>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMerchantStoreQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateMerchantStoreUrl = () => {
+
+
+
+
+  return `/api/merchant/store`
+}
+
+/**
+ * @summary Create the signed-in merchant store
+ */
+export const createMerchantStore = async (createMerchantStoreRequest: CreateMerchantStoreRequest, options?: Parameters<typeof customFetch>[1]): Promise<MerchantStore> => {
+
+  return customFetch<MerchantStore>(getCreateMerchantStoreUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createMerchantStoreRequest)
+  }
+);}
+
+
+
+
+
+export const getCreateMerchantStoreMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMerchantStore>>, TError,{data: BodyType<CreateMerchantStoreRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createMerchantStore>>, TError,{data: BodyType<CreateMerchantStoreRequest>}, TContext> => {
+
+const mutationKey = ['createMerchantStore'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createMerchantStore>>, {data: BodyType<CreateMerchantStoreRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createMerchantStore(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateMerchantStoreMutationResult = NonNullable<Awaited<ReturnType<typeof createMerchantStore>>>
+    export type CreateMerchantStoreMutationBody = BodyType<CreateMerchantStoreRequest>
+    export type CreateMerchantStoreMutationError = ErrorType<void>
+
+    /**
+ * @summary Create the signed-in merchant store
+ */
+export const useCreateMerchantStore = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMerchantStore>>, TError,{data: BodyType<CreateMerchantStoreRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createMerchantStore>>,
+        TError,
+        {data: BodyType<CreateMerchantStoreRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateMerchantStoreMutationOptions(options));
+    }
+
+export const getListMerchantProductsUrl = () => {
+
+
+
+
+  return `/api/merchant/products`
+}
+
+/**
+ * @summary List products owned by the signed-in merchant
+ */
+export const listMerchantProducts = async ( options?: Parameters<typeof customFetch>[1]): Promise<MerchantProduct[]> => {
+
+  return customFetch<MerchantProduct[]>(getListMerchantProductsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMerchantProductsQueryKey = () => {
+    return [
+    `/api/merchant/products`
+    ] as const;
+    }
+
+
+export const getListMerchantProductsQueryOptions = <TData = Awaited<ReturnType<typeof listMerchantProducts>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMerchantProducts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMerchantProductsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMerchantProducts>>> = ({ signal }) => listMerchantProducts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMerchantProducts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMerchantProductsQueryResult = NonNullable<Awaited<ReturnType<typeof listMerchantProducts>>>
+export type ListMerchantProductsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List products owned by the signed-in merchant
+ */
+
+export function useListMerchantProducts<TData = Awaited<ReturnType<typeof listMerchantProducts>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMerchantProducts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMerchantProductsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateMerchantProductUrl = () => {
+
+
+
+
+  return `/api/merchant/products`
+}
+
+/**
+ * @summary Create a product in the signed-in merchant store
+ */
+export const createMerchantProduct = async (createMerchantProductRequest: CreateMerchantProductRequest, options?: Parameters<typeof customFetch>[1]): Promise<MerchantProduct> => {
+
+  return customFetch<MerchantProduct>(getCreateMerchantProductUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createMerchantProductRequest)
+  }
+);}
+
+
+
+
+
+export const getCreateMerchantProductMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMerchantProduct>>, TError,{data: BodyType<CreateMerchantProductRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createMerchantProduct>>, TError,{data: BodyType<CreateMerchantProductRequest>}, TContext> => {
+
+const mutationKey = ['createMerchantProduct'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createMerchantProduct>>, {data: BodyType<CreateMerchantProductRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createMerchantProduct(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateMerchantProductMutationResult = NonNullable<Awaited<ReturnType<typeof createMerchantProduct>>>
+    export type CreateMerchantProductMutationBody = BodyType<CreateMerchantProductRequest>
+    export type CreateMerchantProductMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a product in the signed-in merchant store
+ */
+export const useCreateMerchantProduct = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMerchantProduct>>, TError,{data: BodyType<CreateMerchantProductRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createMerchantProduct>>,
+        TError,
+        {data: BodyType<CreateMerchantProductRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateMerchantProductMutationOptions(options));
+    }
+
+export const getUpdateMerchantProductUrl = (id: string,) => {
+
+
+
+
+  return `/api/merchant/products/${id}`
+}
+
+/**
+ * @summary Update a product owned by the signed-in merchant
+ */
+export const updateMerchantProduct = async (id: string,
+    updateMerchantProductRequest: UpdateMerchantProductRequest, options?: Parameters<typeof customFetch>[1]): Promise<MerchantProduct> => {
+
+  return customFetch<MerchantProduct>(getUpdateMerchantProductUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateMerchantProductRequest)
+  }
+);}
+
+
+
+
+
+export const getUpdateMerchantProductMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMerchantProduct>>, TError,{id: string;data: BodyType<UpdateMerchantProductRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMerchantProduct>>, TError,{id: string;data: BodyType<UpdateMerchantProductRequest>}, TContext> => {
+
+const mutationKey = ['updateMerchantProduct'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMerchantProduct>>, {id: string;data: BodyType<UpdateMerchantProductRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateMerchantProduct(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMerchantProductMutationResult = NonNullable<Awaited<ReturnType<typeof updateMerchantProduct>>>
+    export type UpdateMerchantProductMutationBody = BodyType<UpdateMerchantProductRequest>
+    export type UpdateMerchantProductMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a product owned by the signed-in merchant
+ */
+export const useUpdateMerchantProduct = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMerchantProduct>>, TError,{id: string;data: BodyType<UpdateMerchantProductRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMerchantProduct>>,
+        TError,
+        {id: string;data: BodyType<UpdateMerchantProductRequest>},
+        TContext
+      > => {
+      return useMutation(getUpdateMerchantProductMutationOptions(options));
+    }
+
+export const getDeleteMerchantProductUrl = (id: string,) => {
+
+
+
+
+  return `/api/merchant/products/${id}`
+}
+
+/**
+ * @summary Archive a product owned by the signed-in merchant
+ */
+export const deleteMerchantProduct = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteMerchantProductUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteMerchantProductMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMerchantProduct>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteMerchantProduct>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteMerchantProduct'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteMerchantProduct>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteMerchantProduct(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteMerchantProductMutationResult = NonNullable<Awaited<ReturnType<typeof deleteMerchantProduct>>>
+
+    export type DeleteMerchantProductMutationError = ErrorType<void>
+
+    /**
+ * @summary Archive a product owned by the signed-in merchant
+ */
+export const useDeleteMerchantProduct = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMerchantProduct>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteMerchantProduct>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteMerchantProductMutationOptions(options));
+    }
+
+export const getListMerchantOrdersUrl = () => {
+
+
+
+
+  return `/api/merchant/orders`
+}
+
+/**
+ * @summary List orders for the signed-in merchant store
+ */
+export const listMerchantOrders = async ( options?: Parameters<typeof customFetch>[1]): Promise<MerchantOrder[]> => {
+
+  return customFetch<MerchantOrder[]>(getListMerchantOrdersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMerchantOrdersQueryKey = () => {
+    return [
+    `/api/merchant/orders`
+    ] as const;
+    }
+
+
+export const getListMerchantOrdersQueryOptions = <TData = Awaited<ReturnType<typeof listMerchantOrders>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMerchantOrders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMerchantOrdersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMerchantOrders>>> = ({ signal }) => listMerchantOrders({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMerchantOrders>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMerchantOrdersQueryResult = NonNullable<Awaited<ReturnType<typeof listMerchantOrders>>>
+export type ListMerchantOrdersQueryError = ErrorType<void>
+
+
+/**
+ * @summary List orders for the signed-in merchant store
+ */
+
+export function useListMerchantOrders<TData = Awaited<ReturnType<typeof listMerchantOrders>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMerchantOrders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMerchantOrdersQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

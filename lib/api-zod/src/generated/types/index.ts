@@ -6,10 +6,17 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './createMerchantProductRequest';
+export * from './createMerchantStoreRequest';
 export * from './healthStatus';
 export * from './listMarketplaceProductsParams';
 export * from './marketplaceCategory';
 export * from './marketplaceDeal';
 export * from './marketplaceProduct';
 export * from './marketplaceSummary';
+export * from './merchantOrder';
+export * from './merchantProduct';
+export * from './merchantStore';
+export * from './merchantSummary';
+export * from './updateMerchantProductRequest';
 export * from './walletSummary';

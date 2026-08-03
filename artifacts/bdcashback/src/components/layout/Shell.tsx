@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useClerk, useUser } from "@clerk/react";
-import { Home, Search, Wallet, User, Bell } from "lucide-react";
+import { Home, Search, Wallet, User, Bell, Store } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -13,6 +13,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     { href: "/", icon: Home, label: "Home" },
     { href: "/products", icon: Search, label: "Discover" },
     { href: "/wallet", icon: Wallet, label: "Wallet" },
+    { href: "/merchant", icon: Store, label: "Sell" },
     { href: "/profile", icon: User, label: "Profile" },
   ];
 

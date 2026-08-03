@@ -1,5 +1,14 @@
 import { createInsertSchema } from "drizzle-zod";
-import { numeric, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  integer,
+  index,
+  numeric,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 import { z } from "zod/v4";
 
 export const marketplaceCategoriesTable = pgTable("marketplace_categories", {
@@ -73,3 +82,95 @@ export const insertMarketplaceDealSchema = createInsertSchema(
 );
 export type InsertMarketplaceDeal = z.infer<typeof insertMarketplaceDealSchema>;
 export type MarketplaceDeal = typeof marketplaceDealsTable.$inferSelect;
+
+export const merchantStoresTable = pgTable(
+  "merchant_stores",
+  {
+    id: text("id").primaryKey(),
+    ownerId: text("owner_id").notNull(),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    description: text("description").notNull().default(""),
+    logoUrl: text("logo_url").notNull().default(""),
+    status: text("status").notNull().default("active"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    ownerIdx: index("merchant_stores_owner_idx").on(table.ownerId),
+    ownerSlugUnique: uniqueIndex("merchant_stores_owner_slug_unique").on(
+      table.ownerId,
+      table.slug,
+    ),
+  }),
+);
+
+export const merchantProductsTable = pgTable(
+  "merchant_products",
+  {
+    id: text("id").primaryKey(),
+    storeId: text("store_id")
+      .notNull()
+      .references(() => merchantStoresTable.id, { onDelete: "cascade" }),
+    categoryId: text("category_id")
+      .notNull()
+      .references(() => marketplaceCategoriesTable.id),
+    name: text("name").notNull(),
+    description: text("description").notNull().default(""),
+    brand: text("brand").notNull(),
+    price: numeric("price", { precision: 12, scale: 2 }).notNull(),
+    originalPrice: numeric("original_price", { precision: 12, scale: 2 }).notNull(),
+    cashbackPercent: numeric("cashback_percent", { precision: 5, scale: 2 }).notNull(),
+    imageUrl: text("image_url").notNull().default(""),
+    stock: integer("stock").notNull().default(0),
+    available: boolean("available").notNull().default(true),
+    status: text("status").notNull().default("published"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    storeIdx: index("merchant_products_store_idx").on(table.storeId),
+    categoryIdx: index("merchant_products_category_idx").on(table.categoryId),
+    statusIdx: index("merchant_products_status_idx").on(table.status),
+  }),
+);
+
+export const merchantOrdersTable = pgTable(
+  "merchant_orders",
+  {
+    id: text("id").primaryKey(),
+    storeId: text("store_id")
+      .notNull()
+      .references(() => merchantStoresTable.id, { onDelete: "cascade" }),
+    customerId: text("customer_id").notNull(),
+    total: numeric("total", { precision: 12, scale: 2 }).notNull(),
+    cashback: numeric("cashback", { precision: 12, scale: 2 }).notNull(),
+    itemsCount: integer("items_count").notNull().default(1),
+    status: text("status").notNull().default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    storeIdx: index("merchant_orders_store_idx").on(table.storeId),
+    statusIdx: index("merchant_orders_status_idx").on(table.status),
+  }),
+);
+
+export const insertMerchantStoreSchema = createInsertSchema(merchantStoresTable).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertMerchantStore = z.infer<typeof insertMerchantStoreSchema>;
+export type MerchantStore = typeof merchantStoresTable.$inferSelect;
+
+export const insertMerchantProductSchema = createInsertSchema(merchantProductsTable).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertMerchantProduct = z.infer<typeof insertMerchantProductSchema>;
+export type MerchantProduct = typeof merchantProductsTable.$inferSelect;
+
+export const insertMerchantOrderSchema = createInsertSchema(merchantOrdersTable).omit({
+  createdAt: true,
+});
+export type InsertMerchantOrder = z.infer<typeof insertMerchantOrderSchema>;
+export type MerchantOrder = typeof merchantOrdersTable.$inferSelect;

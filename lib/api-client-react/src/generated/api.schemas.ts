@@ -55,6 +55,90 @@ export interface MarketplaceSummary {
   wallet: WalletSummary;
 }
 
+export interface MerchantStore {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  logoUrl: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateMerchantStoreRequest {
+  name: string;
+  description?: string;
+  logoUrl?: string;
+}
+
+export interface MerchantProduct {
+  id: string;
+  storeId: string;
+  categoryId: string;
+  categoryName: string;
+  name: string;
+  description: string;
+  brand: string;
+  price: number;
+  originalPrice: number;
+  cashbackPercent: number;
+  imageUrl: string;
+  stock: number;
+  available: boolean;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateMerchantProductRequest {
+  categoryId: string;
+  name: string;
+  description?: string;
+  brand: string;
+  price: number;
+  originalPrice: number;
+  cashbackPercent: number;
+  imageUrl: string;
+  stock: number;
+  available: boolean;
+}
+
+export interface UpdateMerchantProductRequest {
+  categoryId?: string;
+  name?: string;
+  description?: string;
+  brand?: string;
+  price?: number;
+  originalPrice?: number;
+  cashbackPercent?: number;
+  imageUrl?: string;
+  stock?: number;
+  available?: boolean;
+  status?: string;
+}
+
+export interface MerchantOrder {
+  id: string;
+  storeId: string;
+  customerId: string;
+  total: number;
+  cashback: number;
+  itemsCount: number;
+  status: string;
+  createdAt: string;
+}
+
+export interface MerchantSummary {
+  store: MerchantStore | null;
+  productCount: number;
+  activeProductCount: number;
+  orderCount: number;
+  grossSales: number;
+  cashbackIssued: number;
+  pendingOrders: number;
+}
+
 export type ListMarketplaceProductsParams = {
 category?: string;
 search?: string;

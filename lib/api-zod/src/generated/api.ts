@@ -113,3 +113,189 @@ export const GetWalletSummaryResponse = zod.object({
 })
 
 
+/**
+ * @summary Get the signed-in merchant workspace summary
+ */
+export const GetMerchantSummaryResponse = zod.object({
+  "store": zod.union([zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string(),
+  "logoUrl": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+}),zod.null()]),
+  "productCount": zod.number(),
+  "activeProductCount": zod.number(),
+  "orderCount": zod.number(),
+  "grossSales": zod.number(),
+  "cashbackIssued": zod.number(),
+  "pendingOrders": zod.number()
+})
+
+
+/**
+ * @summary Get the signed-in merchant store
+ */
+export const GetMerchantStoreResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string(),
+  "logoUrl": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Create the signed-in merchant store
+ */
+export const CreateMerchantStoreBody = zod.object({
+  "name": zod.string(),
+  "description": zod.string().optional(),
+  "logoUrl": zod.string().optional()
+})
+
+export const CreateMerchantStoreResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string(),
+  "logoUrl": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary List products owned by the signed-in merchant
+ */
+export const ListMerchantProductsResponseItem = zod.object({
+  "id": zod.string(),
+  "storeId": zod.string(),
+  "categoryId": zod.string(),
+  "categoryName": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "brand": zod.string(),
+  "price": zod.number(),
+  "originalPrice": zod.number(),
+  "cashbackPercent": zod.number(),
+  "imageUrl": zod.string(),
+  "stock": zod.number(),
+  "available": zod.boolean(),
+  "status": zod.string(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+export const ListMerchantProductsResponse = zod.array(ListMerchantProductsResponseItem)
+
+
+/**
+ * @summary Create a product in the signed-in merchant store
+ */
+export const CreateMerchantProductBody = zod.object({
+  "categoryId": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().optional(),
+  "brand": zod.string(),
+  "price": zod.number(),
+  "originalPrice": zod.number(),
+  "cashbackPercent": zod.number(),
+  "imageUrl": zod.string(),
+  "stock": zod.number(),
+  "available": zod.boolean()
+})
+
+export const CreateMerchantProductResponse = zod.object({
+  "id": zod.string(),
+  "storeId": zod.string(),
+  "categoryId": zod.string(),
+  "categoryName": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "brand": zod.string(),
+  "price": zod.number(),
+  "originalPrice": zod.number(),
+  "cashbackPercent": zod.number(),
+  "imageUrl": zod.string(),
+  "stock": zod.number(),
+  "available": zod.boolean(),
+  "status": zod.string(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Update a product owned by the signed-in merchant
+ */
+export const UpdateMerchantProductParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateMerchantProductBody = zod.object({
+  "categoryId": zod.string().optional(),
+  "name": zod.string().optional(),
+  "description": zod.string().optional(),
+  "brand": zod.string().optional(),
+  "price": zod.number().optional(),
+  "originalPrice": zod.number().optional(),
+  "cashbackPercent": zod.number().optional(),
+  "imageUrl": zod.string().optional(),
+  "stock": zod.number().optional(),
+  "available": zod.boolean().optional(),
+  "status": zod.string().optional()
+})
+
+export const UpdateMerchantProductResponse = zod.object({
+  "id": zod.string(),
+  "storeId": zod.string(),
+  "categoryId": zod.string(),
+  "categoryName": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "brand": zod.string(),
+  "price": zod.number(),
+  "originalPrice": zod.number(),
+  "cashbackPercent": zod.number(),
+  "imageUrl": zod.string(),
+  "stock": zod.number(),
+  "available": zod.boolean(),
+  "status": zod.string(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Archive a product owned by the signed-in merchant
+ */
+export const DeleteMerchantProductParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DeleteMerchantProductResponse = zod.void()
+
+
+/**
+ * @summary List orders for the signed-in merchant store
+ */
+export const ListMerchantOrdersResponseItem = zod.object({
+  "id": zod.string(),
+  "storeId": zod.string(),
+  "customerId": zod.string(),
+  "total": zod.number(),
+  "cashback": zod.number(),
+  "itemsCount": zod.number(),
+  "status": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListMerchantOrdersResponse = zod.array(ListMerchantOrdersResponseItem)
+
+

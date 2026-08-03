@@ -7,6 +7,7 @@ import { Shell } from './components/layout/Shell';
 import Home from './pages/Home';
 import Products from './pages/Products';
 import Wallet from './pages/Wallet';
+import Merchant from './pages/Merchant';
 import { useEffect, useRef } from 'react';
 
 const queryClient = new QueryClient({
@@ -168,6 +169,7 @@ function AppRoutes() {
       <Route path="/" component={HomeRoute} />
       <Route path="/products" component={Products} />
       <Route path="/wallet" component={Wallet} />
+      <Route path="/merchant" component={Merchant} />
       <Route path="/profile/*?" component={ProfilePage} />
       <Route component={NotFound} />
     </Switch>

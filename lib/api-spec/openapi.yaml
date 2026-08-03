@@ -14,6 +14,8 @@ tags:
     description: Customer marketplace discovery
   - name: wallet
     description: Customer wallet summary
+  - name: merchant
+    description: Merchant store and catalog management
 paths:
   /healthz:
     get:
@@ -100,7 +102,175 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WalletSummary"
+  /merchant/summary:
+    get:
+      operationId: getMerchantSummary
+      tags: [merchant]
+      summary: Get the signed-in merchant workspace summary
+      security: [{ clerkSession: [] }]
+      responses:
+        "200":
+          description: Merchant summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MerchantSummary"
+        "401":
+          description: Authentication required
+  /merchant/store:
+    get:
+      operationId: getMerchantStore
+      tags: [merchant]
+      summary: Get the signed-in merchant store
+      security: [{ clerkSession: [] }]
+      responses:
+        "200":
+          description: Merchant store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MerchantStore"
+        "401":
+          description: Authentication required
+        "404":
+          description: Store not found
+    post:
+      operationId: createMerchantStore
+      tags: [merchant]
+      summary: Create the signed-in merchant store
+      security: [{ clerkSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMerchantStoreRequest"
+      responses:
+        "201":
+          description: Merchant store created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MerchantStore"
+        "400":
+          description: Invalid store
+        "401":
+          description: Authentication required
+        "409":
+          description: Store already exists
+  /merchant/products:
+    get:
+      operationId: listMerchantProducts
+      tags: [merchant]
+      summary: List products owned by the signed-in merchant
+      security: [{ clerkSession: [] }]
+      responses:
+        "200":
+          description: Merchant products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MerchantProduct"
+        "401":
+          description: Authentication required
+    post:
+      operationId: createMerchantProduct
+      tags: [merchant]
+      summary: Create a product in the signed-in merchant store
+      security: [{ clerkSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMerchantProductRequest"
+      responses:
+        "201":
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MerchantProduct"
+        "400":
+          description: Invalid product
+        "401":
+          description: Authentication required
+        "404":
+          description: Store or category not found
+  /merchant/products/{id}:
+    patch:
+      operationId: updateMerchantProduct
+      tags: [merchant]
+      summary: Update a product owned by the signed-in merchant
+      security: [{ clerkSession: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMerchantProductRequest"
+      responses:
+        "200":
+          description: Product updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MerchantProduct"
+        "400":
+          description: Invalid product
+        "401":
+          description: Authentication required
+        "404":
+          description: Product not found
+    delete:
+      operationId: deleteMerchantProduct
+      tags: [merchant]
+      summary: Archive a product owned by the signed-in merchant
+      security: [{ clerkSession: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Product archived
+        "401":
+          description: Authentication required
+        "404":
+          description: Product not found
+  /merchant/orders:
+    get:
+      operationId: listMerchantOrders
+      tags: [merchant]
+      summary: List orders for the signed-in merchant store
+      security: [{ clerkSession: [] }]
+      responses:
+        "200":
+          description: Merchant orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MerchantOrder"
+        "401":
+          description: Authentication required
 components:
+  securitySchemes:
+    clerkSession:
+      type: apiKey
+      in: cookie
+      name: __session
   schemas:
     HealthStatus:
       type: object
@@ -195,4 +365,97 @@ components:
         wallet:
           $ref: "#/components/schemas/WalletSummary"
       required: [categories, featuredProducts, deals, wallet]
+    MerchantStore:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: string }
+        logoUrl: { type: string }
+        status: { type: string }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+      required: [id, name, slug, description, logoUrl, status, createdAt, updatedAt]
+    CreateMerchantStoreRequest:
+      type: object
+      properties:
+        name: { type: string }
+        description: { type: string }
+        logoUrl: { type: string }
+      required: [name]
+    MerchantProduct:
+      type: object
+      properties:
+        id: { type: string }
+        storeId: { type: string }
+        categoryId: { type: string }
+        categoryName: { type: string }
+        name: { type: string }
+        description: { type: string }
+        brand: { type: string }
+        price: { type: number }
+        originalPrice: { type: number }
+        cashbackPercent: { type: number }
+        imageUrl: { type: string }
+        stock: { type: number }
+        available: { type: boolean }
+        status: { type: string }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+      required: [id, storeId, categoryId, categoryName, name, description, brand, price, originalPrice, cashbackPercent, imageUrl, stock, available, status, createdAt, updatedAt]
+    CreateMerchantProductRequest:
+      type: object
+      properties:
+        categoryId: { type: string }
+        name: { type: string }
+        description: { type: string }
+        brand: { type: string }
+        price: { type: number }
+        originalPrice: { type: number }
+        cashbackPercent: { type: number }
+        imageUrl: { type: string }
+        stock: { type: number }
+        available: { type: boolean }
+      required: [categoryId, name, brand, price, originalPrice, cashbackPercent, imageUrl, stock, available]
+    UpdateMerchantProductRequest:
+      type: object
+      properties:
+        categoryId: { type: string }
+        name: { type: string }
+        description: { type: string }
+        brand: { type: string }
+        price: { type: number }
+        originalPrice: { type: number }
+        cashbackPercent: { type: number }
+        imageUrl: { type: string }
+        stock: { type: number }
+        available: { type: boolean }
+        status: { type: string }
+    MerchantOrder:
+      type: object
+      properties:
+        id: { type: string }
+        storeId: { type: string }
+        customerId: { type: string }
+        total: { type: number }
+        cashback: { type: number }
+        itemsCount: { type: number }
+        status: { type: string }
+        createdAt: { type: string }
+      required: [id, storeId, customerId, total, cashback, itemsCount, status, createdAt]
+    MerchantSummary:
+      type: object
+      properties:
+        store:
+          anyOf:
+            - $ref: "#/components/schemas/MerchantStore"
+            - type: "null"
+        productCount: { type: number }
+        activeProductCount: { type: number }
+        orderCount: { type: number }
+        grossSales: { type: number }
+        cashbackIssued: { type: number }
+        pendingOrders: { type: number }
+      required: [store, productCount, activeProductCount, orderCount, grossSales, cashbackIssued, pendingOrders]
 
