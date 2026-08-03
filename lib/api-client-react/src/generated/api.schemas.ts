@@ -129,6 +129,72 @@ export interface MerchantOrder {
   createdAt: string;
 }
 
+export interface GroupBuyOrder {
+  id: string;
+  dealId: string;
+  fullName: string;
+  phone: string;
+  address: string;
+  quantity: number;
+  unitPrice: number;
+  totalAmount: number;
+  depositPaid: number;
+  dueAmount: number;
+  paymentMethod: string;
+  paymentRef: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface GroupBuyDeal {
+  id: string;
+  title: string;
+  image: string;
+  category: string;
+  originalPrice: number;
+  groupPrice: number;
+  cashbackPercent: number;
+  depositPercent: number;
+  minParticipants: number;
+  joinedCount: number;
+  endsAt: string;
+  status: string;
+  myOrder: GroupBuyOrder | null;
+}
+
+export type JoinGroupBuyRequestPaymentMethod = typeof JoinGroupBuyRequestPaymentMethod[keyof typeof JoinGroupBuyRequestPaymentMethod];
+
+
+export const JoinGroupBuyRequestPaymentMethod = {
+  bkash: 'bkash',
+  nagad: 'nagad',
+  card: 'card',
+} as const;
+
+export interface JoinGroupBuyRequest {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  fullName: string;
+  /**
+     * @minLength 11
+     * @maxLength 20
+     */
+  phone: string;
+  /**
+     * @minLength 10
+     * @maxLength 500
+     */
+  address: string;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  quantity: number;
+  paymentMethod: JoinGroupBuyRequestPaymentMethod;
+}
+
 export interface MerchantSummary {
   store: MerchantStore | null;
   productCount: number;

@@ -16,6 +16,8 @@ tags:
     description: Customer wallet summary
   - name: merchant
     description: Merchant store and catalog management
+  - name: groupBuy
+    description: Group buy deals and reservations
 paths:
   /healthz:
     get:
@@ -248,6 +250,54 @@ paths:
           description: Authentication required
         "404":
           description: Product not found
+  /group-buys:
+    get:
+      operationId: listGroupBuyDeals
+      tags: [groupBuy]
+      summary: List open group buy deals
+      description: Returns all group buy deals with live participation counts. When signed in, includes the caller's reservation if any.
+      responses:
+        "200":
+          description: Group buy deals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GroupBuyDeal"
+  /group-buys/{id}/join:
+    post:
+      operationId: joinGroupBuyDeal
+      tags: [groupBuy]
+      summary: Join a group buy deal with an order form and deposit payment
+      security: [{ clerkSession: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinGroupBuyRequest"
+      responses:
+        "201":
+          description: Reservation created and deposit recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupBuyOrder"
+        "400":
+          description: Invalid order form
+        "401":
+          description: Authentication required
+        "404":
+          description: Deal not found
+        "409":
+          description: Already joined or deal closed
   /merchant/orders:
     get:
       operationId: listMerchantOrders
@@ -444,6 +494,53 @@ components:
         status: { type: string }
         createdAt: { type: string }
       required: [id, storeId, customerId, total, cashback, itemsCount, status, createdAt]
+    GroupBuyDeal:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        image: { type: string }
+        category: { type: string }
+        originalPrice: { type: number }
+        groupPrice: { type: number }
+        cashbackPercent: { type: number }
+        depositPercent: { type: number }
+        minParticipants: { type: number }
+        joinedCount: { type: number }
+        endsAt: { type: string }
+        status: { type: string }
+        myOrder:
+          anyOf:
+            - $ref: "#/components/schemas/GroupBuyOrder"
+            - type: "null"
+      required: [id, title, image, category, originalPrice, groupPrice, cashbackPercent, depositPercent, minParticipants, joinedCount, endsAt, status, myOrder]
+    JoinGroupBuyRequest:
+      type: object
+      properties:
+        fullName: { type: string, minLength: 1, maxLength: 120 }
+        phone: { type: string, minLength: 11, maxLength: 20 }
+        address: { type: string, minLength: 10, maxLength: 500 }
+        quantity: { type: number, minimum: 1, maximum: 5 }
+        paymentMethod: { type: string, enum: [bkash, nagad, card] }
+      required: [fullName, phone, address, quantity, paymentMethod]
+    GroupBuyOrder:
+      type: object
+      properties:
+        id: { type: string }
+        dealId: { type: string }
+        fullName: { type: string }
+        phone: { type: string }
+        address: { type: string }
+        quantity: { type: number }
+        unitPrice: { type: number }
+        totalAmount: { type: number }
+        depositPaid: { type: number }
+        dueAmount: { type: number }
+        paymentMethod: { type: string }
+        paymentRef: { type: string }
+        status: { type: string }
+        createdAt: { type: string }
+      required: [id, dealId, fullName, phone, address, quantity, unitPrice, totalAmount, depositPaid, dueAmount, paymentMethod, paymentRef, status, createdAt]
     MerchantSummary:
       type: object
       properties:

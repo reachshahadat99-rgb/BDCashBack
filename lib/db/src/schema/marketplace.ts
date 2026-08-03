@@ -174,3 +174,61 @@ export const insertMerchantOrderSchema = createInsertSchema(merchantOrdersTable)
 });
 export type InsertMerchantOrder = z.infer<typeof insertMerchantOrderSchema>;
 export type MerchantOrder = typeof merchantOrdersTable.$inferSelect;
+
+export const groupBuyDealsTable = pgTable("group_buy_deals", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  image: text("image").notNull(),
+  category: text("category").notNull(),
+  originalPrice: numeric("original_price", { precision: 12, scale: 2 }).notNull(),
+  groupPrice: numeric("group_price", { precision: 12, scale: 2 }).notNull(),
+  cashbackPercent: numeric("cashback_percent", { precision: 5, scale: 2 }).notNull(),
+  depositPercent: numeric("deposit_percent", { precision: 5, scale: 2 }).notNull().default("20"),
+  minParticipants: integer("min_participants").notNull(),
+  endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+  status: text("status").notNull().default("open"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const groupBuyOrdersTable = pgTable(
+  "group_buy_orders",
+  {
+    id: text("id").primaryKey(),
+    dealId: text("deal_id")
+      .notNull()
+      .references(() => groupBuyDealsTable.id, { onDelete: "cascade" }),
+    customerId: text("customer_id").notNull(),
+    fullName: text("full_name").notNull(),
+    phone: text("phone").notNull(),
+    address: text("address").notNull(),
+    quantity: integer("quantity").notNull().default(1),
+    unitPrice: numeric("unit_price", { precision: 12, scale: 2 }).notNull(),
+    totalAmount: numeric("total_amount", { precision: 12, scale: 2 }).notNull(),
+    depositPaid: numeric("deposit_paid", { precision: 12, scale: 2 }).notNull(),
+    dueAmount: numeric("due_amount", { precision: 12, scale: 2 }).notNull(),
+    paymentMethod: text("payment_method").notNull(),
+    paymentRef: text("payment_ref").notNull(),
+    status: text("status").notNull().default("reserved"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    dealIdx: index("group_buy_orders_deal_idx").on(table.dealId),
+    customerIdx: index("group_buy_orders_customer_idx").on(table.customerId),
+    dealCustomerUnique: uniqueIndex("group_buy_orders_deal_customer_unique").on(
+      table.dealId,
+      table.customerId,
+    ),
+  }),
+);
+
+export const insertGroupBuyDealSchema = createInsertSchema(groupBuyDealsTable).omit({
+  createdAt: true,
+});
+export type InsertGroupBuyDeal = z.infer<typeof insertGroupBuyDealSchema>;
+export type GroupBuyDeal = typeof groupBuyDealsTable.$inferSelect;
+
+export const insertGroupBuyOrderSchema = createInsertSchema(groupBuyOrdersTable).omit({
+  createdAt: true,
+});
+export type InsertGroupBuyOrder = z.infer<typeof insertGroupBuyOrderSchema>;
+export type GroupBuyOrder = typeof groupBuyOrdersTable.$inferSelect;

@@ -8,7 +8,11 @@
 
 export * from './createMerchantProductRequest';
 export * from './createMerchantStoreRequest';
+export * from './groupBuyDeal';
+export * from './groupBuyOrder';
 export * from './healthStatus';
+export * from './joinGroupBuyRequest';
+export * from './joinGroupBuyRequestPaymentMethod';
 export * from './listMarketplaceProductsParams';
 export * from './marketplaceCategory';
 export * from './marketplaceDeal';

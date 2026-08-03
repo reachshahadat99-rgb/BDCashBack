@@ -22,7 +22,10 @@ import type {
 import type {
   CreateMerchantProductRequest,
   CreateMerchantStoreRequest,
+  GroupBuyDeal,
+  GroupBuyOrder,
   HealthStatus,
+  JoinGroupBuyRequest,
   ListMarketplaceProductsParams,
   MarketplaceCategory,
   MarketplaceProduct,
@@ -970,6 +973,156 @@ export const useDeleteMerchantProduct = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteMerchantProductMutationOptions(options));
+    }
+
+export const getListGroupBuyDealsUrl = () => {
+
+
+
+
+  return `/api/group-buys`
+}
+
+/**
+ * Returns all group buy deals with live participation counts. When signed in, includes the caller's reservation if any.
+ * @summary List open group buy deals
+ */
+export const listGroupBuyDeals = async ( options?: Parameters<typeof customFetch>[1]): Promise<GroupBuyDeal[]> => {
+
+  return customFetch<GroupBuyDeal[]>(getListGroupBuyDealsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListGroupBuyDealsQueryKey = () => {
+    return [
+    `/api/group-buys`
+    ] as const;
+    }
+
+
+export const getListGroupBuyDealsQueryOptions = <TData = Awaited<ReturnType<typeof listGroupBuyDeals>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGroupBuyDeals>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListGroupBuyDealsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listGroupBuyDeals>>> = ({ signal }) => listGroupBuyDeals({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listGroupBuyDeals>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListGroupBuyDealsQueryResult = NonNullable<Awaited<ReturnType<typeof listGroupBuyDeals>>>
+export type ListGroupBuyDealsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List open group buy deals
+ */
+
+export function useListGroupBuyDeals<TData = Awaited<ReturnType<typeof listGroupBuyDeals>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGroupBuyDeals>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListGroupBuyDealsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getJoinGroupBuyDealUrl = (id: string,) => {
+
+
+
+
+  return `/api/group-buys/${id}/join`
+}
+
+/**
+ * @summary Join a group buy deal with an order form and deposit payment
+ */
+export const joinGroupBuyDeal = async (id: string,
+    joinGroupBuyRequest: JoinGroupBuyRequest, options?: Parameters<typeof customFetch>[1]): Promise<GroupBuyOrder> => {
+
+  return customFetch<GroupBuyOrder>(getJoinGroupBuyDealUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(joinGroupBuyRequest)
+  }
+);}
+
+
+
+
+
+export const getJoinGroupBuyDealMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinGroupBuyDeal>>, TError,{id: string;data: BodyType<JoinGroupBuyRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof joinGroupBuyDeal>>, TError,{id: string;data: BodyType<JoinGroupBuyRequest>}, TContext> => {
+
+const mutationKey = ['joinGroupBuyDeal'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof joinGroupBuyDeal>>, {id: string;data: BodyType<JoinGroupBuyRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  joinGroupBuyDeal(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type JoinGroupBuyDealMutationResult = NonNullable<Awaited<ReturnType<typeof joinGroupBuyDeal>>>
+    export type JoinGroupBuyDealMutationBody = BodyType<JoinGroupBuyRequest>
+    export type JoinGroupBuyDealMutationError = ErrorType<void>
+
+    /**
+ * @summary Join a group buy deal with an order form and deposit payment
+ */
+export const useJoinGroupBuyDeal = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinGroupBuyDeal>>, TError,{id: string;data: BodyType<JoinGroupBuyRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof joinGroupBuyDeal>>,
+        TError,
+        {id: string;data: BodyType<JoinGroupBuyRequest>},
+        TContext
+      > => {
+      return useMutation(getJoinGroupBuyDealMutationOptions(options));
     }
 
 export const getListMerchantOrdersUrl = () => {

@@ -284,6 +284,88 @@ export const DeleteMerchantProductResponse = zod.void()
 
 
 /**
+ * Returns all group buy deals with live participation counts. When signed in, includes the caller's reservation if any.
+ * @summary List open group buy deals
+ */
+export const ListGroupBuyDealsResponseItem = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "image": zod.string(),
+  "category": zod.string(),
+  "originalPrice": zod.number(),
+  "groupPrice": zod.number(),
+  "cashbackPercent": zod.number(),
+  "depositPercent": zod.number(),
+  "minParticipants": zod.number(),
+  "joinedCount": zod.number(),
+  "endsAt": zod.string(),
+  "status": zod.string(),
+  "myOrder": zod.union([zod.object({
+  "id": zod.string(),
+  "dealId": zod.string(),
+  "fullName": zod.string(),
+  "phone": zod.string(),
+  "address": zod.string(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number(),
+  "totalAmount": zod.number(),
+  "depositPaid": zod.number(),
+  "dueAmount": zod.number(),
+  "paymentMethod": zod.string(),
+  "paymentRef": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.string()
+}),zod.null()])
+})
+export const ListGroupBuyDealsResponse = zod.array(ListGroupBuyDealsResponseItem)
+
+
+/**
+ * @summary Join a group buy deal with an order form and deposit payment
+ */
+export const JoinGroupBuyDealParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const joinGroupBuyDealBodyFullNameMax = 120;
+
+export const joinGroupBuyDealBodyPhoneMin = 11;
+export const joinGroupBuyDealBodyPhoneMax = 20;
+
+export const joinGroupBuyDealBodyAddressMin = 10;
+export const joinGroupBuyDealBodyAddressMax = 500;
+
+export const joinGroupBuyDealBodyQuantityMax = 5;
+
+
+
+export const JoinGroupBuyDealBody = zod.object({
+  "fullName": zod.string().min(1).max(joinGroupBuyDealBodyFullNameMax),
+  "phone": zod.string().min(joinGroupBuyDealBodyPhoneMin).max(joinGroupBuyDealBodyPhoneMax),
+  "address": zod.string().min(joinGroupBuyDealBodyAddressMin).max(joinGroupBuyDealBodyAddressMax),
+  "quantity": zod.number().min(1).max(joinGroupBuyDealBodyQuantityMax),
+  "paymentMethod": zod.enum(['bkash', 'nagad', 'card'])
+})
+
+export const JoinGroupBuyDealResponse = zod.object({
+  "id": zod.string(),
+  "dealId": zod.string(),
+  "fullName": zod.string(),
+  "phone": zod.string(),
+  "address": zod.string(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number(),
+  "totalAmount": zod.number(),
+  "depositPaid": zod.number(),
+  "dueAmount": zod.number(),
+  "paymentMethod": zod.string(),
+  "paymentRef": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
  * @summary List orders for the signed-in merchant store
  */
 export const ListMerchantOrdersResponseItem = zod.object({
