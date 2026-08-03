@@ -1,16 +1,19 @@
 import { Link, useLocation } from "wouter";
+import { useClerk, useUser } from "@clerk/react";
 import { Home, Search, Wallet, User, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  const { user, isLoaded } = useUser();
+  const { signOut } = useClerk();
 
   const navItems = [
     { href: "/", icon: Home, label: "Home" },
     { href: "/products", icon: Search, label: "Discover" },
     { href: "/wallet", icon: Wallet, label: "Wallet" },
-    { href: "/login", icon: User, label: "Profile" },
+    { href: "/profile", icon: User, label: "Profile" },
   ];
 
   return (
@@ -44,9 +47,22 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-primary">
               <Bell className="w-5 h-5" />
             </Button>
-            <Link href="/login" className="inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-semibold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98] bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm h-9 px-4">
-              Sign In
-            </Link>
+            {isLoaded && user ? (
+              <button
+                type="button"
+                onClick={() => signOut({ redirectUrl: "/" })}
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
+              >
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs">
+                  {(user.firstName?.[0] ?? user.emailAddresses[0]?.emailAddress[0] ?? "U").toUpperCase()}
+                </span>
+                Sign out
+              </button>
+            ) : (
+              <Link href="/sign-in" className="inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-semibold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98] bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm h-9 px-4">
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
       </header>

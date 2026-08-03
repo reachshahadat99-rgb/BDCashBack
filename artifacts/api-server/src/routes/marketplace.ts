@@ -1,4 +1,5 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type RequestHandler } from "express";
+import { getAuth } from "@clerk/express";
 import {
   GetMarketplaceSummaryResponse,
   GetWalletSummaryResponse,
@@ -6,11 +7,13 @@ import {
   ListMarketplaceProductsQueryParams,
   ListMarketplaceProductsResponse,
 } from "@workspace/api-zod";
-import { db, marketplaceCategoriesTable, marketplaceDealsTable, walletSnapshotsTable } from "@workspace/db";
+import { db, marketplaceCategoriesTable, marketplaceDealsTable } from "@workspace/db";
 import {
   categoryView,
   dealView,
+  emptyWalletView,
   ensureMarketplaceSeeded,
+  getOrCreateWallet,
   productView,
   queryProducts,
   walletView,
@@ -18,26 +21,30 @@ import {
 
 const router: IRouter = Router();
 
+const requireAuth: RequestHandler = (req, res, next) => {
+  const userId = getAuth(req).userId;
+  if (!userId) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+  res.locals.userId = userId;
+  next();
+};
+
 router.get("/marketplace/summary", async (req, res): Promise<void> => {
   await ensureMarketplaceSeeded();
-  const [categories, products, deals, walletRows] = await Promise.all([
+  const [categories, products, deals] = await Promise.all([
     db.select().from(marketplaceCategoriesTable),
     queryProducts({ limit: 6 }),
     db.select().from(marketplaceDealsTable),
-    db.select().from(walletSnapshotsTable).limit(1),
   ]);
-  const wallet = walletRows[0];
-  if (!wallet) {
-    res.status(503).json({ error: "Wallet summary is unavailable" });
-    return;
-  }
   const data = GetMarketplaceSummaryResponse.parse({
     categories: categories.map(categoryView),
     featuredProducts: products.map(({ product, categoryName }) =>
       productView(product, categoryName),
     ),
     deals: deals.map(dealView),
-    wallet: walletView(wallet),
+     wallet: emptyWalletView(),
   });
   req.log.info({ productCount: products.length }, "Loaded marketplace summary");
   res.json(data);
@@ -64,9 +71,14 @@ router.get("/marketplace/products", async (req, res): Promise<void> => {
   );
 });
 
-router.get("/wallet/summary", async (_req, res): Promise<void> => {
+router.get("/wallet/summary", requireAuth, async (req, res): Promise<void> => {
   await ensureMarketplaceSeeded();
-  const [wallet] = await db.select().from(walletSnapshotsTable).limit(1);
+  const userId = res.locals.userId as string | undefined;
+  if (!userId) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+  const wallet = await getOrCreateWallet(userId);
   if (!wallet) {
     res.status(503).json({ error: "Wallet summary is unavailable" });
     return;

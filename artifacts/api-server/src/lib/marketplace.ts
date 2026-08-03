@@ -152,16 +152,6 @@ export function ensureMarketplaceSeeded(): Promise<void> {
       .insert(marketplaceDealsTable)
       .values([...dealSeed])
       .onConflictDoNothing();
-    await db
-      .insert(walletSnapshotsTable)
-      .values({
-        id: "demo-customer",
-        balance: "12450.00",
-        pendingCashback: "860.50",
-        availableCashback: "4280.00",
-        rewardPoints: "1240",
-      })
-      .onConflictDoNothing();
   })();
 
   return seedPromise;
@@ -209,6 +199,36 @@ export const walletView = (row: typeof walletSnapshotsTable.$inferSelect) => ({
   availableCashback: money(row.availableCashback),
   rewardPoints: money(row.rewardPoints),
 });
+
+export const emptyWalletView = () => ({
+  balance: 0,
+  pendingCashback: 0,
+  availableCashback: 0,
+  rewardPoints: 0,
+});
+
+export async function getOrCreateWallet(userId: string) {
+  const [existing] = await db
+    .select()
+    .from(walletSnapshotsTable)
+    .where(eq(walletSnapshotsTable.id, userId))
+    .limit(1);
+
+  if (existing) return existing;
+
+  const [created] = await db
+    .insert(walletSnapshotsTable)
+    .values({
+      id: userId,
+      balance: "0.00",
+      pendingCashback: "0.00",
+      availableCashback: "0.00",
+      rewardPoints: "0",
+    })
+    .returning();
+
+  return created;
+}
 
 export async function queryProducts(params: {
   category?: string;

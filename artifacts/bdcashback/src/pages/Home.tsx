@@ -1,5 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetMarketplaceSummary } from "@workspace/api-client-react";
+import { useAuth } from "@clerk/react";
 import { Link } from "wouter";
 import { ChevronRight, Percent, Clock, Sparkles, Wallet as WalletIcon, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,6 +23,7 @@ function formatDealDate(value: string) {
 
 export default function Home() {
   const { data, isLoading, isError } = useGetMarketplaceSummary();
+  const { isLoaded, isSignedIn } = useAuth();
 
   if (isLoading) {
     return (
@@ -88,14 +90,23 @@ export default function Home() {
                 <WalletIcon className="w-5 h-5 text-secondary" />
               </div>
               <div>
-                <div className="text-3xl font-black">{formatCurrency(data.wallet.balance)}</div>
-                <div className="text-sm text-teal-100 flex items-center gap-1 mt-1">
-                  <TrendingUp className="w-4 h-4 text-secondary" />
-                  <span>{formatCurrency(data.wallet.pendingCashback)} pending</span>
-                </div>
+                {isLoaded && isSignedIn ? (
+                  <>
+                    <div className="text-3xl font-black">{formatCurrency(data.wallet.balance)}</div>
+                    <div className="text-sm text-teal-100 flex items-center gap-1 mt-1">
+                      <TrendingUp className="w-4 h-4 text-secondary" />
+                      <span>Wallet ready</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-xl font-bold">Start earning</div>
+                    <div className="text-sm text-teal-100 mt-1">Sign in to see your private wallet</div>
+                  </>
+                )}
               </div>
-              <Link href="/wallet" className="inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-bold transition-all disabled:pointer-events-none disabled:opacity-50 w-full h-11 bg-white text-primary hover:bg-white/90 shadow-sm mt-2">
-                View Wallet
+              <Link href={isSignedIn ? "/wallet" : "/sign-in"} className="inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-bold transition-all disabled:pointer-events-none disabled:opacity-50 w-full h-11 bg-white text-primary hover:bg-white/90 shadow-sm mt-2">
+                {isSignedIn ? "View Wallet" : "Sign in to earn"}
               </Link>
             </CardContent>
           </Card>

@@ -1,4 +1,6 @@
 import { useGetWalletSummary } from "@workspace/api-client-react";
+import { Link } from "wouter";
+import { useAuth } from "@clerk/react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +8,28 @@ import { formatCurrency, formatNumber } from "@/lib/utils";
 import { Wallet as WalletIcon, Clock, ArrowDownToLine, History, Sparkles, AlertCircle } from "lucide-react";
 
 export default function Wallet() {
-  const { data, isLoading, isError } = useGetWalletSummary();
+  const { isLoaded, isSignedIn } = useAuth();
+  const { data, isLoading, isError } = useGetWalletSummary({
+    query: {
+      queryKey: ["/api/wallet/summary", isSignedIn],
+      enabled: isLoaded && Boolean(isSignedIn),
+    },
+  });
+
+  if (isLoaded && !isSignedIn) {
+    return (
+      <div className="container max-w-3xl mx-auto px-4 py-20 flex flex-col items-center justify-center text-center space-y-5">
+        <div className="h-16 w-16 rounded-full bg-accent text-primary flex items-center justify-center">
+          <WalletIcon className="h-8 w-8" />
+        </div>
+        <h1 className="text-3xl font-extrabold tracking-tight">Your wallet is private</h1>
+        <p className="max-w-md text-muted-foreground">Sign in to view your balance, pending cashback, available rewards, and wallet activity.</p>
+        <Link href="/sign-in" className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground shadow-sm hover:bg-primary/90">
+          Sign in to view wallet
+        </Link>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

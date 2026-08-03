@@ -1,1 +1,2 @@
 - [OpenAPI integer compatibility](openapi-integer-compatibility.md) — current generated Zod output uses an integer helper unavailable in the workspace's Zod version.
+- [Clerk package installation](clerk-package-installation.md) — install auth dependencies against each workspace package, not the monorepo root.
