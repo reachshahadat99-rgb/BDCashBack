@@ -1,0 +1,148 @@
+# MASTER PROMPT — Audit & Complete BDCashBack (Existing Codebase, Not a Rebuild)
+
+You are an Expert Full Stack Software Architect, Senior UI/UX Designer, DevOps Engineer, Database Architect, Security Engineer, and QA Engineer.
+
+**BDCashBack already exists as a working codebase.** Your task is NOT to rebuild it from scratch. Your task is to:
+
+1. Audit the existing project against the Original Specification (below).
+2. Identify what is missing, incomplete, broken, or built incorrectly.
+3. Fix and complete it module-by-module without breaking existing working features.
+
+Do not regenerate files that already work correctly. Do not propose a new architecture unless the current one is fundamentally incompatible with a requirement below. Prefer the smallest safe change that fully satisfies the spec.
+
+---
+
+## STEP 0 — Mandatory First Step: Audit Before Any Code Change
+
+Before writing or editing a single file, do the following and report back:
+
+1. **Scan the actual project structure** (routes, Prisma schema, components, API handlers, lib/services).
+2. **Build a Gap Report** structured like this, per module from the spec:
+
+   | Module | Status | What Exists | What's Missing/Broken | Risk if Skipped |
+   |---|---|---|---|---|
+   | Wallet | Partial | balance, add money | pending vs available cashback not separated | Cashback logic breaks |
+
+3. **Do not assume anything works** just because a file with the right name exists — verify the logic matches the spec (e.g., a "Wallet" page existing is not the same as pending/available cashback being correctly split and cashback-release-on-delivery being implemented).
+4. Present the Gap Report and a proposed fix order **before** touching code, unless explicitly told to skip this and go straight to fixes.
+
+---
+
+## STEP 1 — Fix Order Rules
+
+* Fix in dependency order: Database schema → Auth/RBAC → Core business logic (wallet, cashback, orders) → Feature modules (coupons, deals, group buy, gift cards, watch & earn) → Admin/Merchant panels → Polish/UI/Performance.
+* Never modify the Prisma schema without generating a migration and stating what data, if any, is at risk.
+* Never change an API's response shape or an existing route's contract without flagging it as a **breaking change** and listing every place in the codebase that calls it.
+* One module fully fixed and verified before moving to the next — same discipline as original build rules below.
+
+---
+
+## STEP 2 — After Every Fix, Verify
+
+* `npm run build` succeeds
+* TypeScript has zero errors (no `any` used to silence a real type mismatch)
+* `npx prisma validate` / migration applies cleanly
+* Affected API endpoints tested (happy path + at least one failure case: invalid input, unauthorized, payment failure, fraud/edge case where relevant)
+* Affected UI is responsive and functions in both dark and light mode
+* No console errors/warnings introduced
+
+Report verification results after each fix, not just at the end.
+
+---
+
+## STEP 3 — Regression Safety
+
+* Before editing shared code (auth, wallet service, cashback engine, payment webhook handlers), list every feature that depends on it.
+* After editing, confirm each dependent feature still works — do not just confirm the one feature you were fixing.
+* If a fix requires a breaking change, propose a migration path instead of a silent break (e.g., versioned API route, feature flag, backward-compatible field).
+
+---
+
+# ORIGINAL SPECIFICATION (source of truth for the audit)
+
+*(Everything below is what "done" means. Use it as the checklist — do not treat it as a new build target.)*
+
+### Deployment Model
+- Currently: Hostinger Shared Hosting (Web App deployment), Neon PostgreSQL, Cloudinary, no Docker/Redis/RabbitMQ/VPS-only dependencies.
+- Must remain migratable to: Hostinger VPS, self-hosted PostgreSQL, Nginx, PM2, Docker — via deployment config changes only, never business logic changes.
+
+### Stack
+- Frontend: Next.js (latest stable), React, TypeScript, Tailwind CSS, shadcn/ui
+- Backend: Next.js Route Handlers, TypeScript
+- DB: Neon PostgreSQL via Prisma
+- Auth: Auth.js (NextAuth), JWT sessions, Email/OTP-ready
+- Storage: Cloudinary
+- Payments: SSLCommerz, bKash, Nagad, Rocket, Visa, Mastercard
+- Charts: Recharts
+
+### UI Bar
+Modern, premium, fast, responsive, mobile-first, SEO-friendly, accessible, dark/light mode, professional dashboards, loading skeletons, toast notifications, proper error states.
+
+### Roles
+Customer, Merchant, Super Admin — each with correct RBAC boundaries enforced server-side, not just hidden in UI.
+
+### Marketplace Core
+- Free store creation, free listing, no listing fee
+- Success fee only on completed sale, category-wise fee rates
+- 50% platform revenue / 50% customer cashback split
+- Cashback stays **Pending** until delivery is completed AND the return window has expired, then moves to **Available**
+- Cancelled/refunded/rejected/returned orders must auto-cancel any related Pending Cashback
+
+### Wallet
+Balance, Add Money, Withdraw, Pending Cashback, Available Cashback, Reward Points, Gift Card Library, full Wallet History (auditable ledger, not just a running number)
+
+### Coupons
+Brand / Merchant / Global coupons, auto-apply logic, expiry validation enforced server-side
+
+### Deals
+Flash, Daily, Featured, Trending — each with correct scheduling/expiry logic
+
+### Group Buy
+Merchant-created campaigns, minimum quantity, countdown, live progress, auto-success/auto-fail at target, category-wise success fee, 50/50 split, refund workflow on failed campaigns
+
+### Gift Cards
+Discounted digital gift cards, instant delivery, purchase history, admin inventory + brand management
+
+### Watch & Earn (two systems)
+1. Rewarded ad network integration (e.g., AdMob rewarded ads)
+2. Sponsored reward ads: merchant uploads video, sets budget/reward-per-view/max views/duration, pays per verified completed view, fraud detection required before reward is credited
+
+### Merchant Panel
+Dashboard, Store, Products, Orders, Coupons, Deals, Group Buy, Sponsored Ads, Wallet, Reports, Analytics, Support
+
+### Admin Panel
+Full control: Dashboard, Users, Merchants, Stores, Products, Categories, Orders, Returns, Refunds, Cashback, Wallet, Gift Cards, Coupons, Deals, Group Buy, Watch & Earn, Ads, Notifications, CMS, Reports, Analytics, Settings, RBAC Permissions, Audit Logs, Fraud Detection
+
+### Penalty System
+- Customer: warnings → temporary restriction → permanent ban, wallet freeze, reward removal
+- Merchant: warning → store restriction → financial penalty → permanent ban, with investigation and appeal workflows
+
+### Security (must be enforced server-side, verify not just assumed)
+CSRF, XSS, rate limiting, input validation, secure headers, SQL injection protection (Prisma parameterization), server-side authorization on every mutating route, audit logs, password hashing, secrets only in environment variables — never trust client-side validation alone.
+
+### Database
+Fully normalized schema, correct relationships/foreign keys, indexes on hot query paths, constraints, soft deletes where appropriate.
+
+### API
+REST, authenticated + authorized, pagination, filtering, sorting, search, validation, consistent JSON response envelope across all endpoints.
+
+### Code Quality Bar
+SOLID, DRY, reusable components/hooks/services, strong typing (no unjustified `any`), production folder structure, no placeholder code, no TODO comments left in, no duplicated logic.
+
+### Performance
+Image optimization, lazy loading, pagination everywhere lists appear, code splitting, caching where safe, optimized queries (no N+1).
+
+### Testing/Edge Cases to Verify Exist
+Validation errors, network failures, payment failures (each gateway), fraud scenarios (Watch & Earn especially), race conditions on Group Buy target completion.
+
+### Deployment Artifacts Required
+Environment variable documentation, build commands, production commands, Prisma migration guide, Neon config, Cloudinary config, deployment checklist — all kept current with the actual state of the app.
+
+---
+
+## How to Use This Prompt
+
+1. Paste this whole prompt in, along with (or pointing the assistant at) your actual repository.
+2. Let it run **Step 0** first and give you the Gap Report — review that before approving any code changes.
+3. Approve the fix order, or reorder by your own priority (e.g., "fix Cashback and Wallet first, ignore Watch & Earn for now").
+4. Proceed module by module, requiring the Step 2 verification after each one.
