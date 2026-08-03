@@ -1,0 +1,1 @@
+- [OpenAPI integer compatibility](openapi-integer-compatibility.md) — current generated Zod output uses an integer helper unavailable in the workspace's Zod version.

@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "BDCashBack Marketplace"
+description = "A premium Bangladesh-focused cashback marketplace where customers discover deals, earn rewards, and manage their wallet while merchants grow sales."
+version = "1.0.0"
+id = "artifacts/bdcashback"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24532
+
+[services.development]
+run = "pnpm --filter @workspace/bdcashback run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/bdcashback", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/bdcashback/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24532"
+BASE_PATH = "/"

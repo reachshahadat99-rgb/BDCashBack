@@ -10,6 +10,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: marketplace
+    description: Customer marketplace discovery
+  - name: wallet
+    description: Customer wallet summary
 paths:
   /healthz:
     get:
@@ -24,6 +28,78 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /marketplace/summary:
+    get:
+      operationId: getMarketplaceSummary
+      tags: [marketplace]
+      summary: Get the marketplace home summary
+      description: Returns curated categories, featured products, active deals, and wallet highlights.
+      responses:
+        "200":
+          description: Marketplace summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketplaceSummary"
+  /marketplace/categories:
+    get:
+      operationId: listMarketplaceCategories
+      tags: [marketplace]
+      summary: List marketplace categories
+      responses:
+        "200":
+          description: Marketplace categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MarketplaceCategory"
+  /marketplace/products:
+    get:
+      operationId: listMarketplaceProducts
+      tags: [marketplace]
+      summary: List marketplace products
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 1
+            maximum: 50
+            default: 12
+      responses:
+        "200":
+          description: Marketplace products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MarketplaceProduct"
+  /wallet/summary:
+    get:
+      operationId: getWalletSummary
+      tags: [wallet]
+      summary: Get the customer wallet summary
+      responses:
+        "200":
+          description: Wallet summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WalletSummary"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +109,90 @@ components:
           type: string
       required:
         - status
+    MarketplaceCategory:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        icon:
+          type: string
+        productCount:
+          type: number
+      required: [id, name, icon, productCount]
+    MarketplaceProduct:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        brand:
+          type: string
+        category:
+          type: string
+        price:
+          type: number
+        originalPrice:
+          type: number
+        cashbackPercent:
+          type: number
+        rating:
+          type: number
+        reviewCount:
+          type: number
+        image:
+          type: string
+        badge:
+          type: ["string", "null"]
+        merchant:
+          type: string
+      required: [id, name, brand, category, price, originalPrice, cashbackPercent, rating, reviewCount, image, badge, merchant]
+    MarketplaceDeal:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        subtitle:
+          type: string
+        accent:
+          type: string
+        endsAt:
+          type: string
+        cashbackPercent:
+          type: number
+      required: [id, title, subtitle, accent, endsAt, cashbackPercent]
+    WalletSummary:
+      type: object
+      properties:
+        balance:
+          type: number
+        pendingCashback:
+          type: number
+        availableCashback:
+          type: number
+        rewardPoints:
+          type: number
+      required: [balance, pendingCashback, availableCashback, rewardPoints]
+    MarketplaceSummary:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarketplaceCategory"
+        featuredProducts:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarketplaceProduct"
+        deals:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarketplaceDeal"
+        wallet:
+          $ref: "#/components/schemas/WalletSummary"
+      required: [categories, featuredProducts, deals, wallet]
 

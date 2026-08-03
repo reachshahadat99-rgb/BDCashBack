@@ -1,0 +1,512 @@
+You are an Expert Full Stack Software Architect, Senior UI/UX Designer, DevOps Engineer, Database Architect, Security Engineer, and QA Engineer.
+
+Your task is to build a complete production-ready web application called BDCashBack.
+
+This is NOT a demo project.
+
+This must be a scalable production-ready marketplace.
+
+The code must be clean, modular, secure, optimized, and easy to migrate in the future.
+
+IMPORTANT DEPLOYMENT REQUIREMENTS
+
+The application will initially be deployed using Hostinger Shared Hosting with Web App deployment support.
+
+Design the application so it runs within the capabilities of Hostinger's Web App environment.
+
+Do not require Docker, Kubernetes, Redis, RabbitMQ, or any VPS-only dependency for the initial deployment.
+
+The architecture must also support a future migration to a VPS with minimal changes.
+
+Future Migration Requirement
+
+The codebase must be designed so it can later migrate to:
+
+Hostinger VPS
+Self-hosted PostgreSQL
+Nginx
+PM2
+Docker
+
+without changing business logic.
+
+Only deployment configuration should change.
+
+Technology Stack
+
+Frontend
+
+Next.js (Latest Stable)
+React
+TypeScript
+Tailwind CSS
+shadcn/ui
+
+Backend
+
+Next.js Route Handlers (API)
+TypeScript
+
+Database
+
+Neon PostgreSQL
+
+ORM
+
+Prisma
+
+Authentication
+
+Auth.js (NextAuth)
+JWT Session Strategy
+Email/OTP-ready architecture
+
+Storage
+
+Cloudinary
+
+Payments
+
+SSLCommerz
+bKash
+Nagad
+Rocket
+Visa
+Mastercard
+
+Charts
+
+Recharts
+UI Requirements
+
+Modern
+
+Premium
+
+Fast
+
+Responsive
+
+Mobile First
+
+SEO Friendly
+
+Accessible
+
+Dark Mode
+
+Light Mode
+
+Professional Dashboard
+
+Loading Skeletons
+
+Toast Notifications
+
+Error Handling
+
+User Roles
+
+Customer
+
+Merchant
+
+Super Admin
+
+Marketplace
+
+Free Store Creation
+
+Free Product Listing
+
+No Listing Fee
+
+Success Fee only after successful sale
+
+Category-wise Success Fee
+
+50% Platform Revenue
+
+50% Customer Cashback
+
+Cashback released only after:
+
+Delivery completed
+Return period expired
+
+Cancelled, refunded, rejected, or returned orders must automatically cancel Pending Cashback.
+
+Wallet
+
+Wallet Balance
+
+Add Money
+
+Withdraw
+
+Pending Cashback
+
+Available Cashback
+
+Reward Points
+
+Gift Card Library
+
+Wallet History
+
+Coupons
+
+Brand Coupons
+
+Merchant Coupons
+
+Global Coupons
+
+Auto Apply
+
+Expiry Validation
+
+Deals
+
+Flash Deals
+
+Daily Deals
+
+Featured Deals
+
+Trending Deals
+
+Group Buy
+
+Merchant creates campaigns.
+
+Minimum buyer quantity.
+
+Countdown timer.
+
+Campaign progress.
+
+Automatic success when target reached.
+
+Automatic failure when target not reached.
+
+Category-wise Success Fee.
+
+50% Platform Revenue.
+
+50% Cashback.
+
+Refund workflow for unsuccessful campaigns.
+
+Gift Cards
+
+Sell discounted digital Gift Cards.
+
+Example:
+
+Gift Card Value
+
+1000 BDT
+
+Selling Price
+
+950 BDT
+
+Instant Delivery
+
+Gift Card Library
+
+Purchase History
+
+Admin Inventory
+
+Brand Management
+
+Watch & Earn
+
+Support TWO reward systems.
+
+System 1
+
+Reward Ads Network
+
+(Google AdMob Rewarded Ads or another supported rewarded ad network)
+
+System 2
+
+Sponsored Reward Ads
+
+Merchant uploads video.
+
+Merchant selects:
+
+Campaign Budget
+
+Reward per View
+
+Maximum Views
+
+Campaign Duration
+
+Merchant pays per completed verified view.
+
+Reward credited after successful completion.
+
+Fraud detection required.
+
+Merchant Panel
+
+Dashboard
+
+Store
+
+Products
+
+Orders
+
+Coupons
+
+Deals
+
+Group Buy
+
+Sponsored Ads
+
+Wallet
+
+Reports
+
+Analytics
+
+Support
+
+Admin Panel
+
+Admin must have complete control over:
+
+Dashboard
+
+Users
+
+Merchants
+
+Stores
+
+Products
+
+Categories
+
+Orders
+
+Returns
+
+Refunds
+
+Cashback
+
+Wallet
+
+Gift Cards
+
+Coupons
+
+Deals
+
+Group Buy
+
+Watch & Earn
+
+Advertisements
+
+Notifications
+
+CMS
+
+Reports
+
+Analytics
+
+Settings
+
+RBAC Permissions
+
+Audit Logs
+
+Fraud Detection
+
+Penalty System
+
+Customer
+
+Warnings
+
+Temporary Restriction
+
+Permanent Ban
+
+Wallet Freeze
+
+Reward Removal
+
+Merchant
+
+Warning
+
+Store Restriction
+
+Financial Penalty
+
+Permanent Ban
+
+Investigation Workflow
+
+Appeal Workflow
+
+Security
+
+CSRF Protection
+
+XSS Protection
+
+Rate Limiting
+
+Input Validation
+
+Secure Headers
+
+SQL Injection Protection
+
+Role-based Authorization
+
+Audit Logs
+
+Password Hashing
+
+Environment Variables
+
+Never trust frontend validation.
+
+Database
+
+Generate a complete Prisma schema.
+
+Normalize all tables.
+
+Create proper relationships.
+
+Indexes.
+
+Constraints.
+
+Soft Deletes where appropriate.
+
+API
+
+Build REST APIs.
+
+Authentication
+
+Authorization
+
+Pagination
+
+Filtering
+
+Sorting
+
+Searching
+
+Validation
+
+Consistent JSON responses.
+
+Code Quality
+
+SOLID
+
+DRY
+
+Reusable Components
+
+Reusable Hooks
+
+Reusable Services
+
+Strong TypeScript Typing
+
+Production Folder Structure
+
+No Placeholder Code
+
+No TODO Comments
+
+No Duplicate Code
+
+Performance
+
+Image Optimization
+
+Lazy Loading
+
+Pagination
+
+Code Splitting
+
+Caching where appropriate
+
+Optimized Database Queries
+
+Testing
+
+Handle all edge cases.
+
+Handle validation errors.
+
+Handle network failures.
+
+Handle payment failures.
+
+Handle fraud scenarios.
+
+Deployment
+
+Generate everything needed for deployment to Hostinger Web Apps.
+
+Include:
+
+Environment Variable documentation
+Build commands
+Production commands
+Prisma migration guide
+Neon database configuration
+Cloudinary configuration
+Deployment checklist
+Development Rules
+
+Build the application module-by-module.
+
+Never skip modules.
+
+Finish one module completely before starting the next.
+
+Every module must compile successfully.
+
+Every API must work.
+
+Every database migration must work.
+
+Every page must be responsive.
+
+Every feature must be connected to the database.
+
+At the end of each module:
+
+Verify build
+Verify TypeScript
+Verify Prisma
+Verify APIs
+Verify UI
+
+Only then continue to the next module.
+
+The final result must be a production-ready marketplace that can be deployed on Hostinger Web Apps using Neon PostgreSQL today and migrated to a VPS in the future with minimal deployment changes.
