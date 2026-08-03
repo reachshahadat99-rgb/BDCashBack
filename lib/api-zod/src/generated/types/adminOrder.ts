@@ -6,8 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface CustomerOrder {
+export interface AdminOrder {
   id: string;
+  userId: string;
   status: string;
   total: number;
   cashbackAmount: number;

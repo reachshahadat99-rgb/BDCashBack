@@ -1,6 +1,7 @@
 import { Router, type IRouter, type RequestHandler } from "express";
 import { getAuth } from "@clerk/express";
 import {
+  CheckoutBody,
   CheckoutResponse,
   ListOrdersResponse,
   GetOrderResponse,
@@ -26,11 +27,13 @@ const requireAuth: RequestHandler = (req, res, next) => {
 };
 
 // POST /checkout
-router.post("/checkout", requireAuth, async (_req, res): Promise<void> => {
+router.post("/checkout", requireAuth, async (req, res): Promise<void> => {
   const userId = res.locals.userId as string;
+  const body = CheckoutBody.safeParse(req.body ?? {});
+  const couponCode = body.success ? (body.data.couponCode ?? undefined) : undefined;
 
   try {
-    const result = await checkout(userId);
+    const result = await checkout(userId, couponCode);
     res.status(201).json(CheckoutResponse.parse(result.order));
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Checkout failed";

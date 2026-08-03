@@ -12,6 +12,9 @@ export interface CustomerOrderDetail {
   status: string;
   total: number;
   cashbackAmount: number;
+  discountAmount: number;
+  /** @nullable */
+  couponCode: string | null;
   itemsCount: number;
   /** @nullable */
   deliveredAt: string | null;

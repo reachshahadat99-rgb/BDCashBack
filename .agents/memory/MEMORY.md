@@ -1,3 +1,6 @@
 - [OpenAPI integer compatibility](openapi-integer-compatibility.md) — current generated Zod output uses an integer helper unavailable in the workspace's Zod version.
 - [Clerk package installation](clerk-package-installation.md) — install auth dependencies against each workspace package, not the monorepo root.
 - [Drizzle wraps Postgres error codes](drizzle-pg-error-codes.md) — check `error.cause` for pg codes like 23505; exit aborted transactions by throwing sentinels.
+- [Group buy settlement pattern](group-buy-settlement.md) — campaign processor uses FOR UPDATE lock; success=50% cashback share; failure=full deposit refund to wallet balance+availableCashback.
+- [Checkout coupon flow](checkout-coupon-flow.md) — couponCode optional in CheckoutBody; validated+usedCount incremented inside checkout transaction; discountAmount+couponCode persisted on customerOrdersTable.
+- [Admin audit log pattern](admin-audit-log.md) — writeAuditLog() helper in admin.ts writes to auditLogsTable on every admin mutation; all 5 new admin sections use it.

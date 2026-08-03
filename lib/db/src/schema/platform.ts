@@ -146,6 +146,29 @@ export const successFeeRulesTable = pgTable(
   }),
 );
 
+/**
+ * Append-only audit trail for admin actions.
+ * Logged automatically by the route handlers on any mutation.
+ */
+export const auditLogsTable = pgTable(
+  "audit_logs",
+  {
+    id: text("id").primaryKey(),
+    adminUserId: text("admin_user_id").notNull(),
+    action: text("action").notNull(), // e.g. "withdrawal.approve", "order.cancel"
+    targetType: text("target_type").notNull(), // "withdrawal" | "order" | "merchant" | "coupon" ...
+    targetId: text("target_id").notNull(),
+    /** JSON snapshot of changes: { before, after }  */
+    details: text("details").notNull().default("{}"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    adminIdx: index("audit_logs_admin_idx").on(table.adminUserId),
+    createdIdx: index("audit_logs_created_idx").on(table.createdAt),
+    targetIdx: index("audit_logs_target_idx").on(table.targetType, table.targetId),
+  }),
+);
+
 export const insertAdminUserSchema = createInsertSchema(adminUsersTable).omit({
   createdAt: true,
 });

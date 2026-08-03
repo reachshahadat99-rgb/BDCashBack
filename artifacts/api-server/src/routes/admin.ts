@@ -1,6 +1,12 @@
 import { Router, type IRouter, type RequestHandler } from "express";
 import { getAuth } from "@clerk/express";
 import {
+  ActionAdminOrderBody,
+  ActionAdminOrderParams,
+  ActionAdminOrderResponse,
+  ActionAdminWithdrawalBody,
+  ActionAdminWithdrawalParams,
+  ActionAdminWithdrawalResponse,
   ClaimAdminResponse,
   CreateAdminCouponBody,
   CreateAdminCouponResponse,
@@ -11,6 +17,8 @@ import {
   CreateAdminGiftCardBrandResponse,
   CreateAdminGiftCardResponse,
   GetAdminMeResponse,
+  ListAdminAuditLogsResponse,
+  ListAdminCashbackQueueResponse,
   ListAdminCouponsResponse,
   ListAdminDealsResponse,
   ListAdminFeeRulesResponse,
@@ -18,6 +26,9 @@ import {
   ListAdminGiftCardOrdersResponse,
   ListAdminGroupBuysResponse,
   ListAdminMerchantsResponse,
+  ListAdminOrdersResponse,
+  ListAdminWalletTransactionsResponse,
+  ListAdminWithdrawalsResponse,
   ModerateAdminCouponBody,
   ModerateAdminCouponParams,
   ModerateAdminCouponResponse,
@@ -40,11 +51,14 @@ import {
   UpdateAdminMerchantParams,
   UpdateAdminMerchantResponse,
 } from "@workspace/api-zod";
-import { eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { nanoid } from "nanoid";
 import {
   db,
   adminUsersTable,
+  auditLogsTable,
   couponsTable,
+  customerOrdersTable,
   giftCardBrandsTable,
   giftCardOrdersTable,
   giftCardsTable,
@@ -54,6 +68,9 @@ import {
   merchantStoresTable,
   promoDealsTable,
   successFeeRulesTable,
+  walletTransactionsTable,
+  walletSnapshotsTable,
+  withdrawalRequestsTable,
   type SuccessFeeRule,
 } from "@workspace/db";
 import { adminCount, isAdmin, requireAdmin } from "../lib/admin";
@@ -510,6 +527,335 @@ router.patch("/admin/fee-rules/:id", requireAdmin, async (req, res): Promise<voi
     .where(eq(marketplaceCategoriesTable.id, rule.categoryId))
     .limit(1);
   res.json(UpdateAdminFeeRuleResponse.parse(feeRuleView(rule, category?.name ?? rule.categoryId)));
+});
+
+// ---------------------------------------------------------------------------
+// Shared audit-log helper
+// ---------------------------------------------------------------------------
+async function writeAuditLog(
+  adminUserId: string,
+  action: string,
+  targetType: string,
+  targetId: string,
+  details: object = {},
+) {
+  await db.insert(auditLogsTable).values({
+    id: nanoid(),
+    adminUserId,
+    action,
+    targetType,
+    targetId,
+    details: JSON.stringify(details),
+  });
+}
+
+const money2 = (v: string | number | null | undefined) => Number(v ?? 0);
+
+// ---------------------------------------------------------------------------
+// Withdrawals
+// ---------------------------------------------------------------------------
+
+router.get("/admin/withdrawals", requireAdmin, async (req, res): Promise<void> => {
+  const statusFilter = typeof req.query["status"] === "string" ? req.query["status"] : undefined;
+  const rows = statusFilter
+    ? await db
+        .select()
+        .from(withdrawalRequestsTable)
+        .where(eq(withdrawalRequestsTable.status, statusFilter))
+        .orderBy(desc(withdrawalRequestsTable.createdAt))
+    : await db
+        .select()
+        .from(withdrawalRequestsTable)
+        .orderBy(desc(withdrawalRequestsTable.createdAt));
+
+  res.json(
+    ListAdminWithdrawalsResponse.parse(
+      rows.map((w) => ({
+        id: w.id,
+        userId: w.userId,
+        amount: money2(w.amount),
+        status: w.status,
+        bankName: w.bankName,
+        accountNumber: w.accountNumber,
+        notes: w.notes,
+        createdAt: w.createdAt.toISOString(),
+        updatedAt: w.updatedAt.toISOString(),
+      })),
+    ),
+  );
+});
+
+router.patch("/admin/withdrawals/:id/action", requireAdmin, async (req, res): Promise<void> => {
+  const params = ActionAdminWithdrawalParams.safeParse(req.params);
+  const parsed = ActionAdminWithdrawalBody.safeParse(req.body);
+  if (!params.success || !parsed.success) {
+    res.status(400).json({ error: "Invalid action" });
+    return;
+  }
+
+  const actionToStatus: Record<string, string> = {
+    approve: "processing",
+    reject: "failed",
+    process: "completed",
+  };
+  const newStatus = actionToStatus[parsed.data.action];
+  if (!newStatus) {
+    res.status(400).json({ error: "Unknown action" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(withdrawalRequestsTable)
+    .set({
+      status: newStatus,
+      ...(parsed.data.notes ? { notes: parsed.data.notes } : {}),
+      updatedAt: new Date(),
+    })
+    .where(eq(withdrawalRequestsTable.id, params.data.id))
+    .returning();
+
+  if (!updated) {
+    res.status(404).json({ error: "Withdrawal not found" });
+    return;
+  }
+
+  await writeAuditLog(
+    res.locals.userId as string,
+    `withdrawal.${parsed.data.action}`,
+    "withdrawal",
+    updated.id,
+    { newStatus },
+  );
+
+  res.json(
+    ActionAdminWithdrawalResponse.parse({
+      id: updated.id,
+      userId: updated.userId,
+      amount: money2(updated.amount),
+      status: updated.status,
+      bankName: updated.bankName,
+      accountNumber: updated.accountNumber,
+      notes: updated.notes,
+      createdAt: updated.createdAt.toISOString(),
+      updatedAt: updated.updatedAt.toISOString(),
+    }),
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Wallet transactions (platform-wide view)
+// ---------------------------------------------------------------------------
+
+router.get("/admin/wallet-transactions", requireAdmin, async (req, res): Promise<void> => {
+  const typeFilter =
+    typeof req.query["type"] === "string" ? req.query["type"] : undefined;
+  const limit = Math.min(
+    Math.max(1, Number(req.query["limit"] ?? 100)),
+    500,
+  );
+
+  const rows = typeFilter
+    ? await db
+        .select()
+        .from(walletTransactionsTable)
+        .where(eq(walletTransactionsTable.type, typeFilter))
+        .orderBy(desc(walletTransactionsTable.createdAt))
+        .limit(limit)
+    : await db
+        .select()
+        .from(walletTransactionsTable)
+        .orderBy(desc(walletTransactionsTable.createdAt))
+        .limit(limit);
+
+  res.json(
+    ListAdminWalletTransactionsResponse.parse(
+      rows.map((t) => ({
+        id: t.id,
+        userId: t.userId,
+        type: t.type,
+        amount: money2(t.amount),
+        description: t.description,
+        referenceId: t.referenceId ?? null,
+        referenceType: t.referenceType ?? null,
+        createdAt: t.createdAt.toISOString(),
+      })),
+    ),
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Orders (platform-wide view)
+// ---------------------------------------------------------------------------
+
+router.get("/admin/orders", requireAdmin, async (req, res): Promise<void> => {
+  const statusFilter =
+    typeof req.query["status"] === "string" ? req.query["status"] : undefined;
+  const limit = Math.min(Math.max(1, Number(req.query["limit"] ?? 100)), 500);
+
+  const rows = statusFilter
+    ? await db
+        .select()
+        .from(customerOrdersTable)
+        .where(eq(customerOrdersTable.status, statusFilter))
+        .orderBy(desc(customerOrdersTable.createdAt))
+        .limit(limit)
+    : await db
+        .select()
+        .from(customerOrdersTable)
+        .orderBy(desc(customerOrdersTable.createdAt))
+        .limit(limit);
+
+  res.json(
+    ListAdminOrdersResponse.parse(
+      rows.map((o) => ({
+        id: o.id,
+        userId: o.userId,
+        status: o.status,
+        total: money2(o.total),
+        cashbackAmount: money2(o.cashbackAmount),
+        discountAmount: money2(o.discountAmount),
+        couponCode: o.couponCode ?? null,
+        itemsCount: o.itemsCount,
+        deliveredAt: o.deliveredAt?.toISOString() ?? null,
+        completedAt: o.completedAt?.toISOString() ?? null,
+        createdAt: o.createdAt.toISOString(),
+        updatedAt: o.updatedAt.toISOString(),
+      })),
+    ),
+  );
+});
+
+router.patch("/admin/orders/:id/action", requireAdmin, async (req, res): Promise<void> => {
+  const params = ActionAdminOrderParams.safeParse(req.params);
+  const parsed = ActionAdminOrderBody.safeParse(req.body);
+  if (!params.success || !parsed.success) {
+    res.status(400).json({ error: "Invalid action" });
+    return;
+  }
+
+  const [existing] = await db
+    .select()
+    .from(customerOrdersTable)
+    .where(eq(customerOrdersTable.id, params.data.id))
+    .limit(1);
+
+  if (!existing) {
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
+
+  let newStatus: string;
+  if (parsed.data.action === "cancel") {
+    if (!["paid", "processing"].includes(existing.status)) {
+      res.status(400).json({ error: "Only paid or processing orders can be cancelled" });
+      return;
+    }
+    newStatus = "cancelled";
+  } else if (parsed.data.action === "force_complete") {
+    if (existing.status === "completed") {
+      res.status(400).json({ error: "Order is already completed" });
+      return;
+    }
+    newStatus = "completed";
+  } else {
+    res.status(400).json({ error: "Unknown action" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(customerOrdersTable)
+    .set({
+      status: newStatus,
+      ...(newStatus === "completed" ? { completedAt: new Date() } : {}),
+      updatedAt: new Date(),
+    })
+    .where(eq(customerOrdersTable.id, params.data.id))
+    .returning();
+
+  if (!updated) {
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
+
+  await writeAuditLog(
+    res.locals.userId as string,
+    `order.${parsed.data.action}`,
+    "order",
+    updated.id,
+    { reason: parsed.data.reason ?? "", prevStatus: existing.status, newStatus },
+  );
+
+  res.json(
+    ActionAdminOrderResponse.parse({
+      id: updated.id,
+      userId: updated.userId,
+      status: updated.status,
+      total: money2(updated.total),
+      cashbackAmount: money2(updated.cashbackAmount),
+      discountAmount: money2(updated.discountAmount),
+      couponCode: updated.couponCode ?? null,
+      itemsCount: updated.itemsCount,
+      deliveredAt: updated.deliveredAt?.toISOString() ?? null,
+      completedAt: updated.completedAt?.toISOString() ?? null,
+      createdAt: updated.createdAt.toISOString(),
+      updatedAt: updated.updatedAt.toISOString(),
+    }),
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Cashback queue (pending cashback platform-wide)
+// ---------------------------------------------------------------------------
+
+router.get("/admin/cashback-queue", requireAdmin, async (_req, res): Promise<void> => {
+  const rows = await db
+    .select()
+    .from(walletTransactionsTable)
+    .where(eq(walletTransactionsTable.type, "cashback_pending"))
+    .orderBy(desc(walletTransactionsTable.createdAt))
+    .limit(200);
+
+  res.json(
+    ListAdminCashbackQueueResponse.parse(
+      rows.map((t) => ({
+        id: t.id,
+        userId: t.userId,
+        orderId: t.referenceType === "order" ? t.referenceId : null,
+        amount: money2(t.amount),
+        description: t.description,
+        referenceType: t.referenceType ?? null,
+        createdAt: t.createdAt.toISOString(),
+      })),
+    ),
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Audit logs
+// ---------------------------------------------------------------------------
+
+router.get("/admin/audit-logs", requireAdmin, async (req, res): Promise<void> => {
+  const limit = Math.min(Math.max(1, Number(req.query["limit"] ?? 100)), 500);
+
+  const rows = await db
+    .select()
+    .from(auditLogsTable)
+    .orderBy(desc(auditLogsTable.createdAt))
+    .limit(limit);
+
+  res.json(
+    ListAdminAuditLogsResponse.parse(
+      rows.map((l) => ({
+        id: l.id,
+        adminUserId: l.adminUserId,
+        action: l.action,
+        targetType: l.targetType,
+        targetId: l.targetId,
+        details: l.details,
+        createdAt: l.createdAt.toISOString(),
+      })),
+    ),
+  );
 });
 
 export default router;

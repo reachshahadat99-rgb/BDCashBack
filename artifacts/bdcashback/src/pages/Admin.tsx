@@ -24,7 +24,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ShieldCheck, Store, Ticket, Flame, Users, Gift, Percent, Plus } from "lucide-react";
+import {
+  ShieldCheck, Store, Ticket, Flame, Users, Gift, Percent, Plus,
+  Wallet, ShoppingBag, Clock, FileText,
+} from "lucide-react";
 import {
   useGetAdminMe,
   useClaimAdmin,
@@ -46,6 +49,13 @@ import {
   useCreateAdminFeeRule,
   useUpdateAdminFeeRule,
   useListMarketplaceCategories,
+  useListAdminWithdrawals,
+  useActionAdminWithdrawal,
+  useListAdminWalletTransactions,
+  useListAdminOrders,
+  useActionAdminOrder,
+  useListAdminCashbackQueue,
+  useListAdminAuditLogs,
   getGetAdminMeQueryKey,
   getListAdminMerchantsQueryKey,
   getListAdminCouponsQueryKey,
@@ -53,6 +63,8 @@ import {
   getListAdminGroupBuysQueryKey,
   getListAdminGiftCardBrandsQueryKey,
   getListAdminFeeRulesQueryKey,
+  getListAdminWithdrawalsQueryKey,
+  getListAdminOrdersQueryKey,
 } from "@workspace/api-client-react";
 import { formatCurrency } from "@/lib/utils";
 
@@ -520,6 +532,267 @@ function FeeRulesTab() {
   );
 }
 
+function WithdrawalsTab() {
+  const queryClient = useQueryClient();
+  const { data: withdrawals, isLoading: wLoading } = useListAdminWithdrawals();
+  const { data: txns, isLoading: tLoading } = useListAdminWalletTransactions({ limit: 50 });
+  const action = useActionAdminWithdrawal();
+  const invalidate = () =>
+    void queryClient.invalidateQueries({ queryKey: getListAdminWithdrawalsQueryKey() });
+
+  function act(id: string, act2: "approve" | "reject" | "process") {
+    action.mutate({ id, data: { action: act2 } }, { onSuccess: invalidate });
+  }
+
+  const statusColors: Record<string, string> = {
+    pending: "bg-yellow-100 text-yellow-700",
+    processing: "bg-blue-100 text-blue-700",
+    completed: "bg-green-100 text-green-700",
+    failed: "bg-red-100 text-red-700",
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="font-bold mb-2">Withdrawal requests</h3>
+        {wLoading ? (
+          <Skeleton className="h-40 rounded-xl" />
+        ) : (
+          <Card><CardContent className="p-0">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>User</TableHead><TableHead>Amount</TableHead><TableHead>Bank</TableHead>
+                <TableHead>Account</TableHead><TableHead>Status</TableHead><TableHead />
+              </TableRow></TableHeader>
+              <TableBody>
+                {(withdrawals ?? []).map((w) => (
+                  <TableRow key={w.id}>
+                    <TableCell className="font-mono text-xs">{w.userId.slice(0, 12)}…</TableCell>
+                    <TableCell className="font-bold">{formatCurrency(w.amount)}</TableCell>
+                    <TableCell>{w.bankName}</TableCell>
+                    <TableCell className="font-mono text-xs">{w.accountNumber}</TableCell>
+                    <TableCell>
+                      <Badge className={`${statusColors[w.status] ?? "bg-slate-100 text-slate-600"} border-none capitalize`}>{w.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right space-x-1">
+                      {w.status === "pending" && (
+                        <>
+                          <Button size="sm" onClick={() => act(w.id, "approve")} disabled={action.isPending}>Approve</Button>
+                          <Button size="sm" variant="destructive" onClick={() => act(w.id, "reject")} disabled={action.isPending}>Reject</Button>
+                        </>
+                      )}
+                      {w.status === "processing" && (
+                        <Button size="sm" variant="outline" onClick={() => act(w.id, "process")} disabled={action.isPending}>Mark processed</Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {(withdrawals ?? []).length === 0 && (
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No withdrawal requests.</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent></Card>
+        )}
+      </div>
+
+      <div>
+        <h3 className="font-bold mb-2">Recent wallet transactions (all users)</h3>
+        {tLoading ? (
+          <Skeleton className="h-40 rounded-xl" />
+        ) : (
+          <Card><CardContent className="p-0">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>User</TableHead><TableHead>Type</TableHead><TableHead>Amount</TableHead>
+                <TableHead>Description</TableHead><TableHead>Date</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {(txns ?? []).slice(0, 30).map((t) => (
+                  <TableRow key={t.id}>
+                    <TableCell className="font-mono text-xs">{t.userId.slice(0, 12)}…</TableCell>
+                    <TableCell><Badge className="bg-slate-100 text-slate-700 border-none text-xs capitalize">{t.type.replace(/_/g, " ")}</Badge></TableCell>
+                    <TableCell className={`font-bold ${t.amount < 0 ? "text-red-600" : "text-green-600"}`}>{formatCurrency(Math.abs(t.amount))}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-xs truncate">{t.description}</TableCell>
+                    <TableCell className="text-xs">{fmtDate(t.createdAt)}</TableCell>
+                  </TableRow>
+                ))}
+                {(txns ?? []).length === 0 && (
+                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No transactions yet.</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent></Card>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AdminOrdersTab() {
+  const queryClient = useQueryClient();
+  const [statusFilter, setStatusFilter] = useState("");
+  const { data, isLoading } = useListAdminOrders(statusFilter ? { status: statusFilter } : undefined);
+  const action = useActionAdminOrder();
+  const invalidate = () => void queryClient.invalidateQueries({ queryKey: getListAdminOrdersQueryKey() });
+
+  const STATUS_OPTIONS = ["", "paid", "processing", "shipped", "delivered", "completed", "cancelled", "refunded"];
+
+  function act(id: string, a: "cancel" | "force_complete", reason?: string) {
+    action.mutate({ id, data: { action: a, reason } }, { onSuccess: invalidate });
+  }
+
+  const statusColors: Record<string, string> = {
+    paid: "bg-blue-100 text-blue-700",
+    processing: "bg-yellow-100 text-yellow-700",
+    shipped: "bg-indigo-100 text-indigo-700",
+    delivered: "bg-teal-100 text-teal-700",
+    completed: "bg-green-100 text-green-700",
+    cancelled: "bg-red-100 text-red-700",
+    refunded: "bg-slate-100 text-slate-700",
+  };
+
+  if (isLoading) return <Skeleton className="h-48 rounded-xl" />;
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Label className="text-sm">Filter by status:</Label>
+        <select
+          className="h-8 rounded-md border bg-transparent px-2 text-sm"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}>
+          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s || "All"}</option>)}
+        </select>
+      </div>
+      <Card><CardContent className="p-0">
+        <Table>
+          <TableHeader><TableRow>
+            <TableHead>Order ID</TableHead><TableHead>User</TableHead><TableHead>Total</TableHead>
+            <TableHead>Cashback</TableHead><TableHead>Status</TableHead><TableHead>Date</TableHead><TableHead />
+          </TableRow></TableHeader>
+          <TableBody>
+            {(data ?? []).map((o) => (
+              <TableRow key={o.id}>
+                <TableCell className="font-mono text-xs">{o.id.slice(0, 10)}…</TableCell>
+                <TableCell className="font-mono text-xs">{o.userId.slice(0, 12)}…</TableCell>
+                <TableCell className="font-bold">{formatCurrency(o.total)}</TableCell>
+                <TableCell className="text-green-600">{formatCurrency(o.cashbackAmount)}</TableCell>
+                <TableCell>
+                  <Badge className={`${statusColors[o.status] ?? "bg-slate-100 text-slate-600"} border-none capitalize`}>{o.status}</Badge>
+                </TableCell>
+                <TableCell className="text-xs">{fmtDate(o.createdAt)}</TableCell>
+                <TableCell className="text-right space-x-1">
+                  {["paid", "processing"].includes(o.status) && (
+                    <Button size="sm" variant="destructive" onClick={() => act(o.id, "cancel", "Admin cancellation")} disabled={action.isPending}>Cancel</Button>
+                  )}
+                  {!["completed", "cancelled", "refunded"].includes(o.status) && (
+                    <Button size="sm" variant="outline" onClick={() => act(o.id, "force_complete")} disabled={action.isPending}>Force complete</Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+            {(data ?? []).length === 0 && (
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No orders found.</TableCell></TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent></Card>
+    </div>
+  );
+}
+
+function CashbackQueueTab() {
+  const { data, isLoading } = useListAdminCashbackQueue();
+
+  if (isLoading) return <Skeleton className="h-48 rounded-xl" />;
+
+  const total = (data ?? []).reduce((s, i) => s + i.amount, 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="rounded-xl border bg-green-50 px-4 py-2.5">
+          <p className="text-xs text-muted-foreground">Total pending</p>
+          <p className="text-xl font-extrabold text-green-700">{formatCurrency(total)}</p>
+        </div>
+        <div className="rounded-xl border bg-slate-50 px-4 py-2.5">
+          <p className="text-xs text-muted-foreground">Entries</p>
+          <p className="text-xl font-extrabold">{(data ?? []).length}</p>
+        </div>
+      </div>
+      <Card><CardContent className="p-0">
+        <Table>
+          <TableHeader><TableRow>
+            <TableHead>User</TableHead><TableHead>Amount</TableHead><TableHead>Source</TableHead>
+            <TableHead>Description</TableHead><TableHead>Date</TableHead>
+          </TableRow></TableHeader>
+          <TableBody>
+            {(data ?? []).map((item) => (
+              <TableRow key={item.id}>
+                <TableCell className="font-mono text-xs">{item.userId.slice(0, 12)}…</TableCell>
+                <TableCell className="font-bold text-green-600">{formatCurrency(item.amount)}</TableCell>
+                <TableCell>
+                  <Badge className="bg-slate-100 text-slate-700 border-none text-xs capitalize">{item.referenceType?.replace(/_/g, " ") ?? "order"}</Badge>
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground max-w-xs truncate">{item.description}</TableCell>
+                <TableCell className="text-xs">{fmtDate(item.createdAt)}</TableCell>
+              </TableRow>
+            ))}
+            {(data ?? []).length === 0 && (
+              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No pending cashback.</TableCell></TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent></Card>
+      <p className="text-xs text-muted-foreground">
+        Pending cashback becomes available automatically after the return window closes (30 days from delivery). This queue refreshes as orders complete.
+      </p>
+    </div>
+  );
+}
+
+function AuditLogsTab() {
+  const { data, isLoading } = useListAdminAuditLogs({ limit: 100 });
+
+  if (isLoading) return <Skeleton className="h-48 rounded-xl" />;
+
+  const actionColor = (action: string) => {
+    if (action.includes("reject") || action.includes("cancel")) return "bg-red-100 text-red-700";
+    if (action.includes("approve") || action.includes("complete")) return "bg-green-100 text-green-700";
+    return "bg-blue-100 text-blue-700";
+  };
+
+  return (
+    <Card><CardContent className="p-0">
+      <Table>
+        <TableHeader><TableRow>
+          <TableHead>Admin</TableHead><TableHead>Action</TableHead><TableHead>Target</TableHead>
+          <TableHead>Details</TableHead><TableHead>Date</TableHead>
+        </TableRow></TableHeader>
+        <TableBody>
+          {(data ?? []).map((log) => (
+            <TableRow key={log.id}>
+              <TableCell className="font-mono text-xs">{log.adminUserId.slice(0, 12)}…</TableCell>
+              <TableCell>
+                <Badge className={`${actionColor(log.action)} border-none text-xs`}>{log.action}</Badge>
+              </TableCell>
+              <TableCell className="text-xs">
+                <span className="text-muted-foreground">{log.targetType}/</span>
+                <span className="font-mono">{log.targetId.slice(0, 8)}…</span>
+              </TableCell>
+              <TableCell className="text-xs text-muted-foreground max-w-xs truncate">{log.details}</TableCell>
+              <TableCell className="text-xs">{fmtDate(log.createdAt)}</TableCell>
+            </TableRow>
+          ))}
+          {(data ?? []).length === 0 && (
+            <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No audit log entries yet.</TableCell></TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </CardContent></Card>
+  );
+}
+
 export default function Admin() {
   const { isLoaded, isSignedIn } = useAuth();
   const queryClient = useQueryClient();
@@ -585,8 +858,12 @@ export default function Admin() {
         <p className="text-muted-foreground mt-1">Moderate merchants, promotions, gift cards and fee rules.</p>
       </div>
 
-      <Tabs defaultValue="merchants">
-        <TabsList className="flex-wrap h-auto">
+      <Tabs defaultValue="withdrawals">
+        <TabsList className="flex-wrap h-auto gap-y-1">
+          <TabsTrigger value="withdrawals" className="gap-1.5"><Wallet className="w-4 h-4" /> Withdrawals</TabsTrigger>
+          <TabsTrigger value="orders" className="gap-1.5"><ShoppingBag className="w-4 h-4" /> Orders</TabsTrigger>
+          <TabsTrigger value="cashback" className="gap-1.5"><Clock className="w-4 h-4" /> Cashback Queue</TabsTrigger>
+          <TabsTrigger value="audit" className="gap-1.5"><FileText className="w-4 h-4" /> Audit Logs</TabsTrigger>
           <TabsTrigger value="merchants" className="gap-1.5"><Store className="w-4 h-4" /> Merchants</TabsTrigger>
           <TabsTrigger value="coupons" className="gap-1.5"><Ticket className="w-4 h-4" /> Coupons</TabsTrigger>
           <TabsTrigger value="deals" className="gap-1.5"><Flame className="w-4 h-4" /> Deals</TabsTrigger>
@@ -594,6 +871,10 @@ export default function Admin() {
           <TabsTrigger value="gift-cards" className="gap-1.5"><Gift className="w-4 h-4" /> Gift Cards</TabsTrigger>
           <TabsTrigger value="fees" className="gap-1.5"><Percent className="w-4 h-4" /> Fee Rules</TabsTrigger>
         </TabsList>
+        <TabsContent value="withdrawals" className="mt-4"><WithdrawalsTab /></TabsContent>
+        <TabsContent value="orders" className="mt-4"><AdminOrdersTab /></TabsContent>
+        <TabsContent value="cashback" className="mt-4"><CashbackQueueTab /></TabsContent>
+        <TabsContent value="audit" className="mt-4"><AuditLogsTab /></TabsContent>
         <TabsContent value="merchants" className="mt-4"><MerchantsTab /></TabsContent>
         <TabsContent value="coupons" className="mt-4"><CouponsTab /></TabsContent>
         <TabsContent value="deals" className="mt-4"><DealsTab /></TabsContent>

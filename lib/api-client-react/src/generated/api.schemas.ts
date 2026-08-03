@@ -108,11 +108,19 @@ export interface UpdateCartItemRequest {
   quantity: number;
 }
 
+export interface CheckoutRequest {
+  /** Optional coupon code to apply at checkout */
+  couponCode?: string;
+}
+
 export interface CustomerOrder {
   id: string;
   status: string;
   total: number;
   cashbackAmount: number;
+  discountAmount: number;
+  /** @nullable */
+  couponCode: string | null;
   itemsCount: number;
   /** @nullable */
   deliveredAt: string | null;
@@ -140,6 +148,9 @@ export interface CustomerOrderDetail {
   status: string;
   total: number;
   cashbackAmount: number;
+  discountAmount: number;
+  /** @nullable */
+  couponCode: string | null;
   itemsCount: number;
   /** @nullable */
   deliveredAt: string | null;
@@ -664,6 +675,19 @@ export interface UpdateFeeRuleRequest {
   active?: boolean;
 }
 
+export type UpdateMerchantOrderStatusRequestStatus = typeof UpdateMerchantOrderStatusRequestStatus[keyof typeof UpdateMerchantOrderStatusRequestStatus];
+
+
+export const UpdateMerchantOrderStatusRequestStatus = {
+  processing: 'processing',
+  shipped: 'shipped',
+  delivered: 'delivered',
+} as const;
+
+export interface UpdateMerchantOrderStatusRequest {
+  status: UpdateMerchantOrderStatusRequestStatus;
+}
+
 export interface MerchantSummary {
   store: MerchantStore | null;
   productCount: number;
@@ -672,6 +696,98 @@ export interface MerchantSummary {
   grossSales: number;
   cashbackIssued: number;
   pendingOrders: number;
+}
+
+export interface AdminWithdrawal {
+  id: string;
+  userId: string;
+  amount: number;
+  status: string;
+  bankName: string;
+  accountNumber: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AdminWithdrawalActionRequestAction = typeof AdminWithdrawalActionRequestAction[keyof typeof AdminWithdrawalActionRequestAction];
+
+
+export const AdminWithdrawalActionRequestAction = {
+  approve: 'approve',
+  reject: 'reject',
+  process: 'process',
+} as const;
+
+export interface AdminWithdrawalActionRequest {
+  action: AdminWithdrawalActionRequestAction;
+  notes?: string;
+}
+
+export interface AdminWalletTransaction {
+  id: string;
+  userId: string;
+  type: string;
+  amount: number;
+  description: string;
+  /** @nullable */
+  referenceId: string | null;
+  /** @nullable */
+  referenceType: string | null;
+  createdAt: string;
+}
+
+export interface AdminOrder {
+  id: string;
+  userId: string;
+  status: string;
+  total: number;
+  cashbackAmount: number;
+  discountAmount: number;
+  /** @nullable */
+  couponCode: string | null;
+  itemsCount: number;
+  /** @nullable */
+  deliveredAt: string | null;
+  /** @nullable */
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AdminOrderActionRequestAction = typeof AdminOrderActionRequestAction[keyof typeof AdminOrderActionRequestAction];
+
+
+export const AdminOrderActionRequestAction = {
+  cancel: 'cancel',
+  force_complete: 'force_complete',
+} as const;
+
+export interface AdminOrderActionRequest {
+  action: AdminOrderActionRequestAction;
+  reason?: string;
+}
+
+export interface AdminCashbackItem {
+  id: string;
+  userId: string;
+  /** @nullable */
+  orderId: string | null;
+  amount: number;
+  description: string;
+  /** @nullable */
+  referenceType: string | null;
+  createdAt: string;
+}
+
+export interface AdminAuditLog {
+  id: string;
+  adminUserId: string;
+  action: string;
+  targetType: string;
+  targetId: string;
+  details: string;
+  createdAt: string;
 }
 
 export type ListMarketplaceProductsParams = {
@@ -694,5 +810,23 @@ limit?: number;
 
 export type ListPromoDealsParams = {
 featured?: boolean;
+};
+
+export type ListAdminWithdrawalsParams = {
+status?: string;
+};
+
+export type ListAdminWalletTransactionsParams = {
+type?: string;
+limit?: number;
+};
+
+export type ListAdminOrdersParams = {
+status?: string;
+limit?: number;
+};
+
+export type ListAdminAuditLogsParams = {
+limit?: number;
 };
 

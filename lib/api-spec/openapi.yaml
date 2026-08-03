@@ -273,6 +273,12 @@ paths:
       tags: [orders]
       summary: Place an order from the current cart
       security: [{ clerkSession: [] }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutRequest"
       responses:
         "201":
           description: Order placed successfully
@@ -560,6 +566,37 @@ paths:
                   $ref: "#/components/schemas/MerchantOrder"
         "401":
           description: Authentication required
+  /merchant/orders/{id}/status:
+    patch:
+      operationId: updateMerchantOrderStatus
+      tags: [merchant]
+      summary: Advance the fulfillment status of a merchant order (pending → processing → shipped → delivered)
+      security: [{ clerkSession: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMerchantOrderStatusRequest"
+      responses:
+        "200":
+          description: Order status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MerchantOrder"
+        "400":
+          description: Invalid status transition
+        "401":
+          description: Authentication required
+        "404":
+          description: Order not found
   /coupons:
     get:
       operationId: listPublicCoupons
@@ -1364,6 +1401,195 @@ paths:
           description: Admin access required
         "404":
           description: Rule not found
+  /admin/withdrawals:
+    get:
+      operationId: listAdminWithdrawals
+      tags: [admin]
+      summary: List all withdrawal requests (admin)
+      security: [{ clerkSession: [] }]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of withdrawal requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminWithdrawal"
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+  /admin/withdrawals/{id}/action:
+    patch:
+      operationId: actionAdminWithdrawal
+      tags: [admin]
+      summary: Approve, reject or mark a withdrawal as processed (admin)
+      security: [{ clerkSession: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminWithdrawalActionRequest"
+      responses:
+        "200":
+          description: Updated withdrawal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminWithdrawal"
+        "400":
+          description: Invalid action
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+        "404":
+          description: Withdrawal not found
+  /admin/wallet-transactions:
+    get:
+      operationId: listAdminWalletTransactions
+      tags: [admin]
+      summary: List all wallet transactions platform-wide (admin)
+      security: [{ clerkSession: [] }]
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: number
+      responses:
+        "200":
+          description: List of wallet transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminWalletTransaction"
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+  /admin/orders:
+    get:
+      operationId: listAdminOrders
+      tags: [admin]
+      summary: List all customer orders (admin)
+      security: [{ clerkSession: [] }]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: number
+      responses:
+        "200":
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminOrder"
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+  /admin/orders/{id}/action:
+    patch:
+      operationId: actionAdminOrder
+      tags: [admin]
+      summary: Cancel or force-complete an order (admin)
+      security: [{ clerkSession: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminOrderActionRequest"
+      responses:
+        "200":
+          description: Updated order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrder"
+        "400":
+          description: Invalid action
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+        "404":
+          description: Order not found
+  /admin/cashback-queue:
+    get:
+      operationId: listAdminCashbackQueue
+      tags: [admin]
+      summary: List pending cashback entries platform-wide (admin)
+      security: [{ clerkSession: [] }]
+      responses:
+        "200":
+          description: Pending cashback entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminCashbackItem"
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+  /admin/audit-logs:
+    get:
+      operationId: listAdminAuditLogs
+      tags: [admin]
+      summary: List admin audit log entries (admin)
+      security: [{ clerkSession: [] }]
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: number
+      responses:
+        "200":
+          description: List of audit log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminAuditLog"
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
 components:
   securitySchemes:
     clerkSession:
@@ -1549,6 +1775,12 @@ components:
         quantity:
           type: number
       required: [quantity]
+    CheckoutRequest:
+      type: object
+      properties:
+        couponCode:
+          type: string
+          description: Optional coupon code to apply at checkout
     CustomerOrder:
       type: object
       properties:
@@ -1560,6 +1792,10 @@ components:
           type: number
         cashbackAmount:
           type: number
+        discountAmount:
+          type: number
+        couponCode:
+          type: ["string", "null"]
         itemsCount:
           type: number
         deliveredAt:
@@ -1570,7 +1806,7 @@ components:
           type: string
         updatedAt:
           type: string
-      required: [id, status, total, cashbackAmount, itemsCount, deliveredAt, completedAt, createdAt, updatedAt]
+      required: [id, status, total, cashbackAmount, discountAmount, couponCode, itemsCount, deliveredAt, completedAt, createdAt, updatedAt]
     CustomerOrderItem:
       type: object
       properties:
@@ -1606,6 +1842,10 @@ components:
           type: number
         cashbackAmount:
           type: number
+        discountAmount:
+          type: number
+        couponCode:
+          type: ["string", "null"]
         itemsCount:
           type: number
         deliveredAt:
@@ -1620,7 +1860,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CustomerOrderItem"
-      required: [id, status, total, cashbackAmount, itemsCount, deliveredAt, completedAt, createdAt, updatedAt, items]
+      required: [id, status, total, cashbackAmount, discountAmount, couponCode, itemsCount, deliveredAt, completedAt, createdAt, updatedAt, items]
     MarketplaceSummary:
       type: object
       properties:
@@ -2029,6 +2269,13 @@ components:
         customerSharePercent: { type: number, minimum: 0, maximum: 100 }
         returnPeriodDays: { type: number, minimum: 0, maximum: 60 }
         active: { type: boolean }
+    UpdateMerchantOrderStatusRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [processing, shipped, delivered]
+      required: [status]
     MerchantSummary:
       type: object
       properties:
@@ -2043,3 +2290,89 @@ components:
         cashbackIssued: { type: number }
         pendingOrders: { type: number }
       required: [store, productCount, activeProductCount, orderCount, grossSales, cashbackIssued, pendingOrders]
+    AdminWithdrawal:
+      type: object
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        amount: { type: number }
+        status: { type: string }
+        bankName: { type: string }
+        accountNumber: { type: string }
+        notes: { type: string }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+      required: [id, userId, amount, status, bankName, accountNumber, notes, createdAt, updatedAt]
+    AdminWithdrawalActionRequest:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [approve, reject, process]
+        notes: { type: string }
+      required: [action]
+    AdminWalletTransaction:
+      type: object
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        type: { type: string }
+        amount: { type: number }
+        description: { type: string }
+        referenceId:
+          type: ["string", "null"]
+        referenceType:
+          type: ["string", "null"]
+        createdAt: { type: string }
+      required: [id, userId, type, amount, description, referenceId, referenceType, createdAt]
+    AdminOrder:
+      type: object
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        status: { type: string }
+        total: { type: number }
+        cashbackAmount: { type: number }
+        discountAmount: { type: number }
+        couponCode:
+          type: ["string", "null"]
+        itemsCount: { type: number }
+        deliveredAt:
+          type: ["string", "null"]
+        completedAt:
+          type: ["string", "null"]
+        createdAt: { type: string }
+        updatedAt: { type: string }
+      required: [id, userId, status, total, cashbackAmount, discountAmount, couponCode, itemsCount, deliveredAt, completedAt, createdAt, updatedAt]
+    AdminOrderActionRequest:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [cancel, force_complete]
+        reason: { type: string }
+      required: [action]
+    AdminCashbackItem:
+      type: object
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        orderId:
+          type: ["string", "null"]
+        amount: { type: number }
+        description: { type: string }
+        referenceType:
+          type: ["string", "null"]
+        createdAt: { type: string }
+      required: [id, userId, orderId, amount, description, referenceType, createdAt]
+    AdminAuditLog:
+      type: object
+      properties:
+        id: { type: string }
+        adminUserId: { type: string }
+        action: { type: string }
+        targetType: { type: string }
+        targetId: { type: string }
+        details: { type: string }
+        createdAt: { type: string }
+      required: [id, adminUserId, action, targetType, targetId, details, createdAt]

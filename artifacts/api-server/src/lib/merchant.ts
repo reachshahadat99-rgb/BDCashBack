@@ -1,6 +1,8 @@
-import { and, count, eq, ne, sql, sum } from "drizzle-orm";
+import { and, count, eq, inArray, ne, sql, sum } from "drizzle-orm";
 import {
   db,
+  customerOrderItemsTable,
+  customerOrdersTable,
   marketplaceCategoriesTable,
   merchantOrdersTable,
   merchantProductsTable,
@@ -185,4 +187,114 @@ export async function listMerchantOrders(ownerId: string) {
     .orderBy(sql`${merchantOrdersTable.createdAt} desc`);
 
   return orders.map(merchantOrderView);
+}
+
+// ---------------------------------------------------------------------------
+// Merchant order status transitions
+// Valid forward-only path: pending → processing → shipped → delivered
+// When all merchant orders under a customer order reach delivered/cancelled,
+// the customer order is automatically marked delivered so cashback can release.
+// ---------------------------------------------------------------------------
+
+const MERCHANT_STATUS_TRANSITIONS: Record<string, string[]> = {
+  pending: ["processing"],
+  processing: ["shipped"],
+  shipped: ["delivered"],
+};
+
+export async function updateMerchantOrderStatus(
+  ownerId: string,
+  merchantOrderId: string,
+  newStatus: "processing" | "shipped" | "delivered",
+) {
+  return db.transaction(async (tx) => {
+    // 1. Resolve store for this merchant
+    const [store] = await tx
+      .select({ id: merchantStoresTable.id })
+      .from(merchantStoresTable)
+      .where(eq(merchantStoresTable.ownerId, ownerId))
+      .limit(1);
+
+    if (!store) throw new Error("STORE_NOT_FOUND");
+
+    // 2. Load and verify ownership of the merchant order
+    const [order] = await tx
+      .select()
+      .from(merchantOrdersTable)
+      .where(
+        and(
+          eq(merchantOrdersTable.id, merchantOrderId),
+          eq(merchantOrdersTable.storeId, store.id),
+        ),
+      )
+      .limit(1);
+
+    if (!order) throw new Error("ORDER_NOT_FOUND");
+
+    // 3. Guard: only allow valid forward transitions
+    const allowed = MERCHANT_STATUS_TRANSITIONS[order.status] ?? [];
+    if (!allowed.includes(newStatus)) {
+      throw new Error(
+        `Cannot transition merchant order from "${order.status}" to "${newStatus}"`,
+      );
+    }
+
+    // 4. Update the merchant order
+    const [updated] = await tx
+      .update(merchantOrdersTable)
+      .set({ status: newStatus })
+      .where(eq(merchantOrdersTable.id, merchantOrderId))
+      .returning();
+
+    // 5. If delivered: check whether all sibling merchant orders are done,
+    //    and if so mark the customer order as delivered (triggers cashback release)
+    if (newStatus === "delivered") {
+      // Find the customer order that contains this merchant order
+      const [item] = await tx
+        .select({ orderId: customerOrderItemsTable.orderId })
+        .from(customerOrderItemsTable)
+        .where(eq(customerOrderItemsTable.merchantOrderId, merchantOrderId))
+        .limit(1);
+
+      if (item) {
+        // Get every merchant order ID linked to this customer order
+        const siblings = await tx
+          .select({ merchantOrderId: customerOrderItemsTable.merchantOrderId })
+          .from(customerOrderItemsTable)
+          .where(eq(customerOrderItemsTable.orderId, item.orderId));
+
+        const siblingIds = [
+          ...new Set(
+            siblings.map((s) => s.merchantOrderId).filter(Boolean) as string[],
+          ),
+        ];
+
+        // All must be delivered or cancelled for the customer order to be delivered
+        const siblingRows = await tx
+          .select({ status: merchantOrdersTable.status })
+          .from(merchantOrdersTable)
+          .where(inArray(merchantOrdersTable.id, siblingIds));
+
+        const allDone = siblingRows.every(
+          (r) => r.status === "delivered" || r.status === "cancelled",
+        );
+
+        if (allDone) {
+          const now = new Date();
+          await tx
+            .update(customerOrdersTable)
+            .set({ status: "delivered", deliveredAt: now, updatedAt: now })
+            .where(
+              and(
+                eq(customerOrdersTable.id, item.orderId),
+                // Idempotency guard: only advance if not already delivered/completed
+                inArray(customerOrdersTable.status, ["paid", "processing", "shipped"]),
+              ),
+            );
+        }
+      }
+    }
+
+    return merchantOrderView(updated!);
+  });
 }

@@ -10,6 +10,9 @@ import {
   GetMerchantSummaryResponse,
   ListMerchantOrdersResponse,
   ListMerchantProductsResponse,
+  UpdateMerchantOrderStatusBody,
+  UpdateMerchantOrderStatusParams,
+  UpdateMerchantOrderStatusResponse,
   UpdateMerchantProductBody,
   UpdateMerchantProductParams,
   UpdateMerchantProductResponse,
@@ -30,6 +33,7 @@ import {
   merchantProductView,
   slugify,
   storeView,
+  updateMerchantOrderStatus,
 } from "../lib/merchant";
 
 const router: IRouter = Router();
@@ -306,6 +310,35 @@ router.delete("/merchant/products/:id", requireAuth, async (req, res): Promise<v
 
 router.get("/merchant/orders", requireAuth, async (_req, res): Promise<void> => {
   res.json(ListMerchantOrdersResponse.parse(await listMerchantOrders(ownerId(res))));
+});
+
+// PATCH /merchant/orders/:id/status
+// Advance fulfillment: pending → processing → shipped → delivered
+// Marking delivered triggers automatic customer-order delivery + cashback release
+router.patch("/merchant/orders/:id/status", requireAuth, async (req, res): Promise<void> => {
+  const params = UpdateMerchantOrderStatusParams.safeParse(req.params);
+  const body = UpdateMerchantOrderStatusBody.safeParse(req.body);
+
+  if (!params.success || !body.success) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+
+  try {
+    const updated = await updateMerchantOrderStatus(
+      ownerId(res),
+      params.data.id,
+      body.data.status as "processing" | "shipped" | "delivered",
+    );
+    res.json(UpdateMerchantOrderStatusResponse.parse(updated));
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Status update failed";
+    if (msg === "ORDER_NOT_FOUND" || msg === "STORE_NOT_FOUND") {
+      res.status(404).json({ error: "Order not found" });
+      return;
+    }
+    res.status(400).json({ error: msg });
+  }
 });
 
 export default router;

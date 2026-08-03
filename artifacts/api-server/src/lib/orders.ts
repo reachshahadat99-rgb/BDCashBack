@@ -8,6 +8,8 @@ import {
   customerOrderItemsTable,
   merchantOrdersTable,
   merchantProductsTable,
+  merchantStoresTable,
+  couponsTable,
   walletTransactionsTable,
   walletSnapshotsTable,
   withdrawalRequestsTable,
@@ -239,7 +241,7 @@ export async function clearCart(userId: string) {
 // Checkout — fully atomic
 // ---------------------------------------------------------------------------
 
-export async function checkout(userId: string) {
+export async function checkout(userId: string, couponCode?: string) {
   // All financial writes — including the cart read — happen inside a single
   // transaction. We use DELETE...RETURNING to atomically consume the cart,
   // so two concurrent checkout requests cannot both process the same items.
@@ -285,8 +287,8 @@ export async function checkout(userId: string) {
       }
     }
 
-    // ---- 3. Compute order totals ----
-    const total = round2(
+    // ---- 3. Compute order subtotal ----
+    const subtotal = round2(
       cartItems.reduce((s, i) => s + money(i.price) * i.quantity, 0),
     );
     const totalCashback = round2(
@@ -297,6 +299,62 @@ export async function checkout(userId: string) {
       ),
     );
     const totalItems = cartItems.reduce((s, i) => s + i.quantity, 0);
+
+    // ---- 3b. Validate and apply coupon (if provided) ----
+    let discountAmount = 0;
+    let appliedCouponCode: string | null = null;
+
+    if (couponCode) {
+      const code = couponCode.trim().toUpperCase();
+      const storeIds = [...new Set(cartItems.map((i) => i.storeId))];
+      const categoryIds = [...new Set(products.map((p) => p.categoryId))];
+
+      const rows = await tx
+        .select({ coupon: couponsTable, storeName: merchantStoresTable.name })
+        .from(couponsTable)
+        .leftJoin(merchantStoresTable, eq(couponsTable.storeId, merchantStoresTable.id))
+        .where(eq(couponsTable.code, code))
+        .limit(1);
+
+      const row = rows[0];
+      if (!row) throw new Error("Coupon code not found");
+
+      const coupon = row.coupon;
+      const now2 = Date.now();
+
+      if (coupon.status !== "approved") throw new Error("This coupon is not active");
+      if (coupon.startsAt.getTime() > now2) throw new Error("This coupon is not valid yet");
+      if (coupon.endsAt.getTime() <= now2) throw new Error("This coupon has expired");
+      if (coupon.maxUses > 0 && coupon.usedCount >= coupon.maxUses) {
+        throw new Error("This coupon has reached its usage limit");
+      }
+      if (money(coupon.minOrderValue) > subtotal) {
+        throw new Error(`Minimum order value for this coupon is ৳${money(coupon.minOrderValue)}`);
+      }
+      // Scope checks
+      if (coupon.categoryId && !categoryIds.includes(coupon.categoryId)) {
+        throw new Error("This coupon only applies to a specific category not in your cart");
+      }
+      if (coupon.scope === "store" && coupon.storeId && !storeIds.includes(coupon.storeId)) {
+        throw new Error("This coupon only applies at its issuing store");
+      }
+
+      // Compute discount
+      discountAmount =
+        coupon.discountType === "percent"
+          ? Math.round((subtotal * money(coupon.discountValue)) / 100)
+          : Math.min(subtotal, money(coupon.discountValue));
+
+      // Atomically increment usedCount — only within this transaction
+      await tx
+        .update(couponsTable)
+        .set({ usedCount: sql`${couponsTable.usedCount} + 1` })
+        .where(eq(couponsTable.id, coupon.id));
+
+      appliedCouponCode = coupon.code;
+    }
+
+    const total = round2(Math.max(0, subtotal - discountAmount));
 
     // ---- 4. Create customer order ----
     const orderId = nanoid();
@@ -310,6 +368,8 @@ export async function checkout(userId: string) {
         status: "paid",
         total: String(total),
         cashbackAmount: String(totalCashback),
+        discountAmount: String(discountAmount),
+        couponCode: appliedCouponCode,
         itemsCount: totalItems,
       })
       .returning();
@@ -410,6 +470,8 @@ export function orderView(order: typeof customerOrdersTable.$inferSelect) {
     status: order.status,
     total: money(order.total),
     cashbackAmount: money(order.cashbackAmount),
+    discountAmount: money(order.discountAmount),
+    couponCode: order.couponCode ?? null,
     itemsCount: order.itemsCount,
     deliveredAt: order.deliveredAt?.toISOString() ?? null,
     completedAt: order.completedAt?.toISOString() ?? null,

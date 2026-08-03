@@ -261,11 +261,17 @@ export const RemoveCartItemResponse = zod.void()
 /**
  * @summary Place an order from the current cart
  */
+export const CheckoutBody = zod.object({
+  "couponCode": zod.string().optional().describe('Optional coupon code to apply at checkout')
+})
+
 export const CheckoutResponse = zod.object({
   "id": zod.string(),
   "status": zod.string(),
   "total": zod.number(),
   "cashbackAmount": zod.number(),
+  "discountAmount": zod.number(),
+  "couponCode": zod.string().nullable(),
   "itemsCount": zod.number(),
   "deliveredAt": zod.string().nullable(),
   "completedAt": zod.string().nullable(),
@@ -282,6 +288,8 @@ export const ListOrdersResponseItem = zod.object({
   "status": zod.string(),
   "total": zod.number(),
   "cashbackAmount": zod.number(),
+  "discountAmount": zod.number(),
+  "couponCode": zod.string().nullable(),
   "itemsCount": zod.number(),
   "deliveredAt": zod.string().nullable(),
   "completedAt": zod.string().nullable(),
@@ -303,6 +311,8 @@ export const GetOrderResponse = zod.object({
   "status": zod.string(),
   "total": zod.number(),
   "cashbackAmount": zod.number(),
+  "discountAmount": zod.number(),
+  "couponCode": zod.string().nullable(),
   "itemsCount": zod.number(),
   "deliveredAt": zod.string().nullable(),
   "completedAt": zod.string().nullable(),
@@ -335,6 +345,8 @@ export const CancelOrderResponse = zod.object({
   "status": zod.string(),
   "total": zod.number(),
   "cashbackAmount": zod.number(),
+  "discountAmount": zod.number(),
+  "couponCode": zod.string().nullable(),
   "itemsCount": zod.number(),
   "deliveredAt": zod.string().nullable(),
   "completedAt": zod.string().nullable(),
@@ -609,6 +621,29 @@ export const ListMerchantOrdersResponseItem = zod.object({
   "createdAt": zod.string()
 })
 export const ListMerchantOrdersResponse = zod.array(ListMerchantOrdersResponseItem)
+
+
+/**
+ * @summary Advance the fulfillment status of a merchant order (pending → processing → shipped → delivered)
+ */
+export const UpdateMerchantOrderStatusParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateMerchantOrderStatusBody = zod.object({
+  "status": zod.enum(['processing', 'shipped', 'delivered'])
+})
+
+export const UpdateMerchantOrderStatusResponse = zod.object({
+  "id": zod.string(),
+  "storeId": zod.string(),
+  "customerId": zod.string(),
+  "total": zod.number(),
+  "cashback": zod.number(),
+  "itemsCount": zod.number(),
+  "status": zod.string(),
+  "createdAt": zod.string()
+})
 
 
 /**
@@ -1543,5 +1578,159 @@ export const UpdateAdminFeeRuleResponse = zod.object({
   "returnPeriodDays": zod.number(),
   "active": zod.boolean()
 })
+
+
+/**
+ * @summary List all withdrawal requests (admin)
+ */
+export const ListAdminWithdrawalsQueryParams = zod.object({
+  "status": zod.coerce.string().optional()
+})
+
+export const ListAdminWithdrawalsResponseItem = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "amount": zod.number(),
+  "status": zod.string(),
+  "bankName": zod.string(),
+  "accountNumber": zod.string(),
+  "notes": zod.string(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+export const ListAdminWithdrawalsResponse = zod.array(ListAdminWithdrawalsResponseItem)
+
+
+/**
+ * @summary Approve, reject or mark a withdrawal as processed (admin)
+ */
+export const ActionAdminWithdrawalParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ActionAdminWithdrawalBody = zod.object({
+  "action": zod.enum(['approve', 'reject', 'process']),
+  "notes": zod.string().optional()
+})
+
+export const ActionAdminWithdrawalResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "amount": zod.number(),
+  "status": zod.string(),
+  "bankName": zod.string(),
+  "accountNumber": zod.string(),
+  "notes": zod.string(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary List all wallet transactions platform-wide (admin)
+ */
+export const ListAdminWalletTransactionsQueryParams = zod.object({
+  "type": zod.coerce.string().optional(),
+  "limit": zod.coerce.number().optional()
+})
+
+export const ListAdminWalletTransactionsResponseItem = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "type": zod.string(),
+  "amount": zod.number(),
+  "description": zod.string(),
+  "referenceId": zod.string().nullable(),
+  "referenceType": zod.string().nullable(),
+  "createdAt": zod.string()
+})
+export const ListAdminWalletTransactionsResponse = zod.array(ListAdminWalletTransactionsResponseItem)
+
+
+/**
+ * @summary List all customer orders (admin)
+ */
+export const ListAdminOrdersQueryParams = zod.object({
+  "status": zod.coerce.string().optional(),
+  "limit": zod.coerce.number().optional()
+})
+
+export const ListAdminOrdersResponseItem = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "status": zod.string(),
+  "total": zod.number(),
+  "cashbackAmount": zod.number(),
+  "discountAmount": zod.number(),
+  "couponCode": zod.string().nullable(),
+  "itemsCount": zod.number(),
+  "deliveredAt": zod.string().nullable(),
+  "completedAt": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+export const ListAdminOrdersResponse = zod.array(ListAdminOrdersResponseItem)
+
+
+/**
+ * @summary Cancel or force-complete an order (admin)
+ */
+export const ActionAdminOrderParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ActionAdminOrderBody = zod.object({
+  "action": zod.enum(['cancel', 'force_complete']),
+  "reason": zod.string().optional()
+})
+
+export const ActionAdminOrderResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "status": zod.string(),
+  "total": zod.number(),
+  "cashbackAmount": zod.number(),
+  "discountAmount": zod.number(),
+  "couponCode": zod.string().nullable(),
+  "itemsCount": zod.number(),
+  "deliveredAt": zod.string().nullable(),
+  "completedAt": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary List pending cashback entries platform-wide (admin)
+ */
+export const ListAdminCashbackQueueResponseItem = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "orderId": zod.string().nullable(),
+  "amount": zod.number(),
+  "description": zod.string(),
+  "referenceType": zod.string().nullable(),
+  "createdAt": zod.string()
+})
+export const ListAdminCashbackQueueResponse = zod.array(ListAdminCashbackQueueResponseItem)
+
+
+/**
+ * @summary List admin audit log entries (admin)
+ */
+export const ListAdminAuditLogsQueryParams = zod.object({
+  "limit": zod.coerce.number().optional()
+})
+
+export const ListAdminAuditLogsResponseItem = zod.object({
+  "id": zod.string(),
+  "adminUserId": zod.string(),
+  "action": zod.string(),
+  "targetType": zod.string(),
+  "targetId": zod.string(),
+  "details": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListAdminAuditLogsResponse = zod.array(ListAdminAuditLogsResponseItem)
 
 

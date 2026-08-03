@@ -67,6 +67,10 @@ export const customerOrdersTable = pgTable(
     status: text("status").notNull().default("paid"),
     total: numeric("total", { precision: 12, scale: 2 }).notNull(),
     cashbackAmount: numeric("cashback_amount", { precision: 12, scale: 2 }).notNull().default("0"),
+    /** Coupon discount applied at checkout, 0 if none. */
+    discountAmount: numeric("discount_amount", { precision: 12, scale: 2 }).notNull().default("0"),
+    /** Code of the coupon applied at checkout, null if none. */
+    couponCode: text("coupon_code"),
     itemsCount: integer("items_count").notNull().default(1),
     deliveredAt: timestamp("delivered_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
