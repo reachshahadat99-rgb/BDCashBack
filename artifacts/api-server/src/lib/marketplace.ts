@@ -6,6 +6,7 @@ import {
   marketplaceProductsTable,
   walletSnapshotsTable,
 } from "@workspace/db";
+import { money } from "./money";
 
 const categorySeed = [
   { id: "fashion", name: "Fashion", icon: "sparkles", productCount: "284" },
@@ -156,8 +157,6 @@ export function ensureMarketplaceSeeded(): Promise<void> {
 
   return seedPromise;
 }
-
-const money = (value: string | number): number => Number(value);
 
 export const categoryView = (row: typeof marketplaceCategoriesTable.$inferSelect) => ({
   id: row.id,

@@ -1,5 +1,4 @@
-import { Router, type IRouter, type RequestHandler } from "express";
-import { getAuth } from "@clerk/express";
+import { Router, type IRouter } from "express";
 import {
   CreateMerchantCouponBody,
   CreateMerchantCouponResponse,
@@ -14,111 +13,18 @@ import {
 import { and, eq } from "drizzle-orm";
 import { db, couponsTable, merchantStoresTable, type Coupon, type MerchantStore } from "@workspace/db";
 import { getMerchantStore } from "../lib/merchant";
+import { requireAuth } from "../middleware/auth";
+import { money } from "../lib/money";
+import { validateCouponEligibility } from "../lib/coupon-validator";
+import {
+  couponView,
+  listCouponsWithStore,
+  validateCouponDates,
+  validateCouponValues,
+  insertCoupon,
+} from "../domains/coupons/coupon.service";
 
 const router: IRouter = Router();
-const money = (v: string | number | null | undefined) => Number(v ?? 0);
-
-const requireAuth: RequestHandler = (req, res, next) => {
-  const userId = getAuth(req).userId;
-  if (!userId) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
-  res.locals.userId = userId;
-  next();
-};
-
-export function couponView(coupon: Coupon, storeName: string | null) {
-  return {
-    id: coupon.id,
-    scope: coupon.scope,
-    storeId: coupon.storeId,
-    storeName,
-    code: coupon.code,
-    title: coupon.title,
-    discountType: coupon.discountType,
-    discountValue: money(coupon.discountValue),
-    minOrderValue: money(coupon.minOrderValue),
-    maxUses: coupon.maxUses,
-    usedCount: coupon.usedCount,
-    categoryId: coupon.categoryId,
-    startsAt: coupon.startsAt.toISOString(),
-    endsAt: coupon.endsAt.toISOString(),
-    status: coupon.status,
-    createdAt: coupon.createdAt.toISOString(),
-  };
-}
-
-export async function listCouponsWithStore(where?: ReturnType<typeof eq>) {
-  const rows = await db
-    .select({ coupon: couponsTable, storeName: merchantStoresTable.name })
-    .from(couponsTable)
-    .leftJoin(merchantStoresTable, eq(couponsTable.storeId, merchantStoresTable.id))
-    .where(where);
-  return rows
-    .sort((a, b) => b.coupon.createdAt.getTime() - a.coupon.createdAt.getTime())
-    .map((r) => couponView(r.coupon, r.storeName));
-}
-
-export function validateCouponDates(startsAt: Date, endsAt: Date): string | undefined {
-  if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
-    return "Valid start and end dates are required";
-  }
-  if (endsAt.getTime() <= startsAt.getTime()) {
-    return "End date must be after the start date";
-  }
-  return undefined;
-}
-
-export function validateCouponValues(input: {
-  discountType: string;
-  discountValue: number;
-}): string | undefined {
-  if (input.discountValue <= 0) return "Discount value must be greater than zero";
-  if (input.discountType === "percent" && input.discountValue > 90) {
-    return "Percent discounts cannot exceed 90%";
-  }
-  return undefined;
-}
-
-export async function insertCoupon(input: {
-  scope: "global" | "store";
-  store: MerchantStore | null;
-  createdBy: string;
-  status: string;
-  body: {
-    code: string;
-    title: string;
-    discountType: string;
-    discountValue: number;
-    minOrderValue?: number;
-    maxUses?: number;
-    categoryId?: string;
-    startsAt: string;
-    endsAt: string;
-  };
-}) {
-  const [coupon] = await db
-    .insert(couponsTable)
-    .values({
-      id: `coupon_${crypto.randomUUID()}`,
-      scope: input.scope,
-      storeId: input.store?.id ?? null,
-      code: input.body.code.trim().toUpperCase(),
-      title: input.body.title.trim(),
-      discountType: input.body.discountType,
-      discountValue: String(input.body.discountValue),
-      minOrderValue: String(input.body.minOrderValue ?? 0),
-      maxUses: Math.floor(input.body.maxUses ?? 0),
-      categoryId: input.body.categoryId ?? null,
-      startsAt: new Date(input.body.startsAt),
-      endsAt: new Date(input.body.endsAt),
-      status: input.status,
-      createdBy: input.createdBy,
-    })
-    .returning();
-  return coupon;
-}
 
 router.get("/coupons", async (_req, res): Promise<void> => {
   const now = Date.now();
@@ -154,48 +60,24 @@ router.post("/coupons/validate", async (req, res): Promise<void> => {
     fail("Coupon code not found");
     return;
   }
-  const coupon = row.coupon;
-  const now = Date.now();
-  if (coupon.status !== "approved") {
-    fail("This coupon is not active");
-    return;
-  }
-  if (coupon.startsAt.getTime() > now) {
-    fail("This coupon is not valid yet");
-    return;
-  }
-  if (coupon.endsAt.getTime() <= now) {
-    fail("This coupon has expired");
-    return;
-  }
-  if (coupon.maxUses > 0 && coupon.usedCount >= coupon.maxUses) {
-    fail("This coupon has reached its usage limit");
-    return;
-  }
-  if (money(coupon.minOrderValue) > subtotal) {
-    fail(`Minimum order value is ৳${money(coupon.minOrderValue)}`);
-    return;
-  }
-  if (coupon.categoryId && coupon.categoryId !== categoryId) {
-    fail("This coupon only applies to a specific category");
-    return;
-  }
-  if (coupon.scope === "store" && coupon.storeId !== storeId) {
-    fail("This coupon only applies at its issuing store");
-    return;
-  }
 
-  const discountAmount =
-    coupon.discountType === "percent"
-      ? Math.round((subtotal * money(coupon.discountValue)) / 100)
-      : Math.min(subtotal, money(coupon.discountValue));
+  const result = validateCouponEligibility(row.coupon, {
+    subtotal,
+    storeIds: storeId ? [storeId] : [],
+    categoryIds: categoryId ? [categoryId] : [],
+  });
+
+  if (!result.valid) {
+    fail(result.reason);
+    return;
+  }
 
   res.json(
     ValidateCouponResponse.parse({
       valid: true,
-      discountAmount,
+      discountAmount: result.discountAmount,
       reason: null,
-      coupon: couponView(coupon, row.storeName),
+      coupon: couponView(row.coupon, row.storeName),
     }),
   );
 });

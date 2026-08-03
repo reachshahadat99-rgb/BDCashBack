@@ -8,8 +8,7 @@ import {
   merchantProductsTable,
   merchantStoresTable,
 } from "@workspace/db";
-
-const money = (value: string | number | null | undefined) => Number(value ?? 0);
+import { money } from "./money";
 
 export const storeView = (store: typeof merchantStoresTable.$inferSelect) => ({
   id: store.id,

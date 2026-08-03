@@ -73,24 +73,15 @@ import {
   withdrawalRequestsTable,
   type SuccessFeeRule,
 } from "@workspace/db";
-import { adminCount, isAdmin, requireAdmin } from "../lib/admin";
-import { couponView, insertCoupon, listCouponsWithStore, validateCouponDates, validateCouponValues } from "./coupons";
-import { listDealsWithStore, promoDealView } from "./promo-deals";
-import { campaignProgress, campaignView } from "./group-buy";
-import { brandView, ensureGiftCardsSeeded, giftCardOrderView, giftCardView } from "./gift-cards";
+import { adminCount, isAdmin } from "../lib/admin";
+import { requireAuth, requireAdmin } from "../middleware/auth";
+import { money } from "../lib/money";
+import { couponView, insertCoupon, listCouponsWithStore, validateCouponDates, validateCouponValues } from "../domains/coupons/coupon.service";
+import { listDealsWithStore, promoDealView } from "../domains/promo-deals/promo-deal.service";
+import { campaignProgress, campaignView } from "../domains/group-buy/group-buy.service";
+import { brandView, ensureGiftCardsSeeded, giftCardOrderView, giftCardView } from "../domains/gift-cards/gift-card.service";
 
 const router: IRouter = Router();
-const money = (v: string | number | null | undefined) => Number(v ?? 0);
-
-const requireAuth: RequestHandler = (req, res, next) => {
-  const userId = getAuth(req).userId;
-  if (!userId) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
-  res.locals.userId = userId;
-  next();
-};
 
 function feeRuleView(rule: SuccessFeeRule, categoryName: string) {
   return {

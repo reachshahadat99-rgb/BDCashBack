@@ -1,5 +1,6 @@
 import { Router, type IRouter, type RequestHandler } from "express";
-import { getAuth } from "@clerk/express";
+import { requireAuth } from "../middleware/auth";
+import { money } from "../lib/money";
 import {
   CreateMerchantProductBody,
   CreateMerchantProductResponse,
@@ -37,17 +38,6 @@ import {
 } from "../lib/merchant";
 
 const router: IRouter = Router();
-const money = (value: string | number | null | undefined) => Number(value ?? 0);
-
-const requireAuth: RequestHandler = (req, res, next) => {
-  const userId = getAuth(req).userId;
-  if (!userId) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
-  res.locals.userId = userId;
-  next();
-};
 
 function ownerId(res: Parameters<RequestHandler>[1]) {
   return res.locals.userId as string;

@@ -4,7 +4,7 @@
  */
 import { and, eq } from "drizzle-orm";
 import { db, groupBuyDealsTable, groupBuyOrdersTable } from "@workspace/db";
-import { executeJoin } from "../routes/group-buy";
+import { executeJoin } from "../domains/group-buy/group-buy.service";
 
 const DEAL_ID = "gbtest_concurrency";
 const CUSTOMER = "user_test_concurrency";

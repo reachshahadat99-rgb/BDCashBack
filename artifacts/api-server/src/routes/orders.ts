@@ -1,5 +1,4 @@
-import { Router, type IRouter, type RequestHandler } from "express";
-import { getAuth } from "@clerk/express";
+import { Router, type IRouter } from "express";
 import {
   CheckoutBody,
   CheckoutResponse,
@@ -13,18 +12,9 @@ import {
   getOrderDetail,
   cancelOrder,
 } from "../lib/orders";
+import { requireAuth } from "../middleware/auth";
 
 const router: IRouter = Router();
-
-const requireAuth: RequestHandler = (req, res, next) => {
-  const userId = getAuth(req).userId;
-  if (!userId) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
-  res.locals.userId = userId;
-  next();
-};
 
 // POST /checkout
 router.post("/checkout", requireAuth, async (req, res): Promise<void> => {

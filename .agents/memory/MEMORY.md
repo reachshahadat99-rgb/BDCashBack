@@ -4,3 +4,4 @@
 - [Group buy settlement pattern](group-buy-settlement.md) — campaign processor uses FOR UPDATE lock; success=50% cashback share; failure=full deposit refund to wallet balance+availableCashback.
 - [Checkout coupon flow](checkout-coupon-flow.md) — couponCode optional in CheckoutBody; validated+usedCount incremented inside checkout transaction; discountAmount+couponCode persisted on customerOrdersTable.
 - [Admin audit log pattern](admin-audit-log.md) — writeAuditLog() helper in admin.ts writes to auditLogsTable on every admin mutation; all 5 new admin sections use it.
+- [Codebase domain structure](domain-structure.md) — refactored into domains/; key rules: admin imports from domains not peer routes; service logic lives in domain files, routes are thin HTTP handlers.

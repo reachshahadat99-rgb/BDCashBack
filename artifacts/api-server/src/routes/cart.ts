@@ -1,5 +1,4 @@
-import { Router, type IRouter, type RequestHandler } from "express";
-import { getAuth } from "@clerk/express";
+import { Router, type IRouter } from "express";
 import {
   AddCartItemBody,
   UpdateCartItemBody,
@@ -14,18 +13,9 @@ import {
   removeCartItem,
   clearCart,
 } from "../lib/orders";
+import { requireAuth } from "../middleware/auth";
 
 const router: IRouter = Router();
-
-const requireAuth: RequestHandler = (req, res, next) => {
-  const userId = getAuth(req).userId;
-  if (!userId) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
-  res.locals.userId = userId;
-  next();
-};
 
 // GET /cart
 router.get("/cart", requireAuth, async (_req, res): Promise<void> => {

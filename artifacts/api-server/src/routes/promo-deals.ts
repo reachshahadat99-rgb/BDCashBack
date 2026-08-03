@@ -1,5 +1,4 @@
-import { Router, type IRouter, type RequestHandler } from "express";
-import { getAuth } from "@clerk/express";
+import { Router, type IRouter } from "express";
 import {
   CreateMerchantDealBody,
   CreateMerchantDealResponse,
@@ -13,47 +12,10 @@ import {
 import { and, eq } from "drizzle-orm";
 import { db, promoDealsTable, merchantStoresTable, type PromoDeal } from "@workspace/db";
 import { getMerchantStore } from "../lib/merchant";
+import { requireAuth } from "../middleware/auth";
+import { promoDealView, listDealsWithStore } from "../domains/promo-deals/promo-deal.service";
 
 const router: IRouter = Router();
-const money = (v: string | number | null | undefined) => Number(v ?? 0);
-
-const requireAuth: RequestHandler = (req, res, next) => {
-  const userId = getAuth(req).userId;
-  if (!userId) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
-  res.locals.userId = userId;
-  next();
-};
-
-export function promoDealView(deal: PromoDeal, storeName: string) {
-  return {
-    id: deal.id,
-    storeId: deal.storeId,
-    storeName,
-    title: deal.title,
-    description: deal.description,
-    imageUrl: deal.imageUrl,
-    discountPercent: money(deal.discountPercent),
-    startsAt: deal.startsAt.toISOString(),
-    endsAt: deal.endsAt.toISOString(),
-    status: deal.status,
-    featured: deal.featured,
-    createdAt: deal.createdAt.toISOString(),
-  };
-}
-
-export async function listDealsWithStore(where?: ReturnType<typeof eq>) {
-  const rows = await db
-    .select({ deal: promoDealsTable, storeName: merchantStoresTable.name })
-    .from(promoDealsTable)
-    .innerJoin(merchantStoresTable, eq(promoDealsTable.storeId, merchantStoresTable.id))
-    .where(where);
-  return rows
-    .sort((a, b) => b.deal.createdAt.getTime() - a.deal.createdAt.getTime())
-    .map((r) => promoDealView(r.deal, r.storeName));
-}
 
 function validateDealDates(startsAt: Date, endsAt: Date): string | undefined {
   if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {

@@ -18,3 +18,11 @@ export function formatCurrency(amount: number) {
 export function formatNumber(num: number) {
   return new Intl.NumberFormat("en-US").format(num);
 }
+
+export function fmtDate(d: string) {
+  return new Intl.DateTimeFormat("en-BD", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(d));
+}
