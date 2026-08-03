@@ -1,0 +1,129 @@
+/admin
+├── Dashboard
+│   ├── Overview (GMV, orders today, active users, pending payouts, fraud alerts count)
+│   ├── Revenue Chart (platform revenue vs cashback paid, by day/week/month)
+│   └── Quick Alerts (low stock, pending KYC, disputed orders, fraud flags)
+│
+├── Users (Customers)
+│   ├── All Users (list, search, filter by status/join date)
+│   ├── User Detail (profile, order history, wallet, cashback history, penalty history, login/device history)
+│   ├── KYC / Verification Queue
+│   └── Penalty Actions (warn / restrict / ban / freeze wallet — with reason + audit trail)
+│
+├── Merchants
+│   ├── All Merchants (list, status: pending / approved / suspended)
+│   ├── Merchant Onboarding Queue (document review, approve/reject)
+│   ├── Merchant Detail (store info, sales, payout history, penalty history)
+│   ├── Store Restrictions / Suspension
+│   └── Merchant Penalty & Appeal Review
+│
+├── Stores
+│   ├── All Stores (list, search)
+│   ├── Store Detail (products, ratings, policy compliance)
+│   └── Store Approval / Flag / Takedown
+│
+├── Products
+│   ├── All Products (list, filter by category/status/merchant)
+│   ├── Pending Approval Queue
+│   ├── Product Detail / Edit / Takedown
+│   └── Bulk Actions (approve, reject, delist)
+│
+├── Categories
+│   ├── Category Tree (create/edit/reorder, nested categories)
+│   └── Category Success Fee Settings (fee % per category)
+│
+├── Orders
+│   ├── All Orders (search, filter by status/date/merchant/customer)
+│   ├── Order Detail (timeline, payment, cashback status, shipment)
+│   ├── Disputed Orders Queue
+│   └── Manual Order Actions (cancel, force-complete — with audit log)
+│
+├── Returns & Refunds
+│   ├── Return Requests Queue (approve/reject)
+│   ├── Refund Processing (status tracking per payment gateway)
+│   └── Return Policy Settings (return window days, per category override)
+│
+├── Cashback
+│   ├── Cashback Rules (category-wise %, platform/cashback split settings)
+│   ├── Pending Cashback Queue (auto vs manual review)
+│   ├── Available Cashback Report
+│   └── Cancelled Cashback Log (linked to cancelled/returned orders)
+│
+├── Wallet
+│   ├── All Wallet Transactions (ledger, searchable, exportable)
+│   ├── Withdrawal Requests Queue (approve/reject/process)
+│   ├── Add Money Reconciliation
+│   └── Wallet Freeze Management
+│
+├── Gift Cards
+│   ├── Gift Card Inventory (add stock, brand-wise)
+│   ├── Brand Management (add/edit brand, logo, terms)
+│   ├── Gift Card Sales Report
+│   └── Redemption Log
+│
+├── Coupons
+│   ├── All Coupons (Brand / Merchant / Global — filter by type)
+│   ├── Create Global Coupon
+│   ├── Coupon Usage Report
+│   └── Expired/Flagged Coupons
+│
+├── Deals
+│   ├── Flash Deals (schedule, approve merchant-submitted)
+│   ├── Daily Deals
+│   ├── Featured Deals (manual curation/placement)
+│   └── Trending Deals (auto-ranked, override option)
+│
+├── Group Buy
+│   ├── All Campaigns (status: active/success/failed)
+│   ├── Campaign Detail (progress, buyer list, refund status)
+│   ├── Manual Override (force-close, extend — audit logged)
+│   └── Refund Queue (failed campaigns)
+│
+├── Watch & Earn
+│   ├── Ad Network Settings (rewarded ad network config)
+│   ├── Sponsored Ad Campaigns (merchant-submitted, approve/reject)
+│   ├── Campaign Detail (budget spent, views, reward payouts)
+│   └── Fraud Flags (suspicious view patterns, bot detection log)
+│
+├── Advertisements
+│   ├── Homepage Banner Management
+│   ├── Category Page Ad Slots
+│   └── Ad Performance Report
+│
+├── Notifications
+│   ├── Push/Email/SMS Campaign Builder
+│   ├── Notification Templates
+│   └── Delivery Log
+│
+├── CMS
+│   ├── Pages (About, Terms, Privacy, FAQ — rich text editor)
+│   ├── Homepage Sections (banner, featured store, category highlight order)
+│   └── Blog/Announcements (optional)
+│
+├── Reports & Analytics
+│   ├── Sales Report
+│   ├── Cashback Payout Report
+│   ├── Merchant Performance Report
+│   ├── Customer Cohort/Retention Report
+│   └── Export (CSV/PDF)
+│
+├── Settings
+│   ├── Platform Fee Settings
+│   ├── Payment Gateway Config (SSLCommerz, bKash, Nagad, Rocket, Card)
+│   ├── General Site Settings (logo, contact, SEO defaults)
+│   └── Email/SMS Provider Config
+│
+├── RBAC / Admin Roles
+│   ├── Admin Users List
+│   ├── Role Creation (Super Admin, Support Admin, Finance Admin, Content Admin)
+│   └── Permission Matrix (per module: view/create/edit/delete/approve)
+│
+├── Audit Logs
+│   ├── All Actions Log (who did what, when, before/after state)
+│   └── Filter by Admin / Module / Date
+│
+└── Fraud Detection
+    ├── Flagged Orders
+    ├── Flagged Watch & Earn Views
+    ├── Flagged Withdrawal Patterns
+    └── Fraud Rules Configuration
