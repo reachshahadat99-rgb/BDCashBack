@@ -1,0 +1,49 @@
+Build the following modules with complete end-to-end business logic. Every feature must be connected to the Customer Panel, Merchant Panel, and Admin Panel.
+
+Marketplace (Shop)
+
+Merchants can create a store and list products for free. Customers can browse, search, and purchase products. A category-wise Success Fee is charged only after a completed order. After the return period ends, 50% of the Success Fee becomes platform revenue and 50% is credited to the customer's Cashback Wallet.
+
+Merchant Panel: Create Store, Manage Products, Inventory, Orders, Shipping, Reports.
+
+Admin Panel: Approve Merchants, Manage Stores, Products, Categories, Orders, Success Fee Rules, Reports.
+
+Coupons
+
+Merchants and Admin can create discount coupons with validity dates, usage limits, minimum order values, and category restrictions. Customers can apply eligible coupons during checkout.
+
+Merchant Panel: Create and manage store coupons, view usage reports.
+
+Admin Panel: Create global coupons, approve merchant coupons, manage coupon policies.
+
+Deals
+
+Merchants can create limited-time promotional deals. Admin can feature selected deals on the homepage. Customers can browse and purchase products at discounted prices during the campaign period.
+
+Merchant Panel: Create, edit, schedule, and monitor deals.
+
+Admin Panel: Approve, feature, or remove deals and monitor campaign performance.
+
+Cashback
+
+Customers earn Cashback only after an order is successfully delivered and the return period expires. Cashback remains in Pending status until then. Cancelled, refunded, or returned orders automatically remove Pending Cashback.
+
+Merchant Panel: View Success Fee deductions and Cashback contribution reports.
+
+Admin Panel: Configure Cashback rules, category-wise percentages, approval workflows, and reports.
+
+Group Buy
+
+Merchants create Group Buy campaigns with a minimum buyer target, campaign duration, and discounted group price. If the target is reached, all orders are processed. If not, the campaign fails and eligible payments are refunded according to platform policy. A Success Fee is charged only on completed orders.
+
+Merchant Panel: Create campaigns, set quantity targets, pricing, duration, and monitor progress.
+
+Admin Panel: Approve campaigns, manage refunds, configure Success Fee rules, and monitor analytics.
+
+Gift Cards
+
+BDCashBack sells discounted digital Gift Cards from authorized partners. Customers pay a discounted price and receive the full-value Gift Card digitally after successful payment.
+
+Merchant Panel: Not available (only if merchants are officially allowed to sell gift cards in the future).
+
+Admin Panel: Manage brands, inventory, pricing, discounts, availability, and delivery records.
