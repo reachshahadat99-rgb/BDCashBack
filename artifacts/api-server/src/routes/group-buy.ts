@@ -1,13 +1,23 @@
 import { Router, type IRouter, type RequestHandler } from "express";
 import { getAuth } from "@clerk/express";
 import {
+  CreateMerchantGroupBuyBody,
+  CreateMerchantGroupBuyResponse,
   JoinGroupBuyDealBody,
   JoinGroupBuyDealParams,
   JoinGroupBuyDealResponse,
   ListGroupBuyDealsResponse,
+  ListMerchantGroupBuysResponse,
 } from "@workspace/api-zod";
 import { eq, sql } from "drizzle-orm";
-import { db, groupBuyDealsTable, groupBuyOrdersTable } from "@workspace/db";
+import {
+  db,
+  groupBuyDealsTable,
+  groupBuyOrdersTable,
+  type GroupBuyDeal as GroupBuyDealRow,
+} from "@workspace/db";
+import { getMerchantStore } from "../lib/merchant";
+import { recordedPaymentService as paymentService } from "../lib/payments";
 
 const router: IRouter = Router();
 const money = (value: string | number | null | undefined) => Number(value ?? 0);
@@ -127,6 +137,7 @@ router.get("/group-buys", async (req, res): Promise<void> => {
   const myOrderByDeal = new Map(myOrders.map((o) => [o.dealId, o]));
 
   const view = deals
+    .filter((deal) => deal.approvalStatus === "approved")
     .sort((a, b) => a.endsAt.getTime() - b.endsAt.getTime())
     .map((deal) => {
       const mine = myOrderByDeal.get(deal.id);
@@ -183,7 +194,7 @@ router.post("/group-buys/:id/join", requireAuth, async (req, res): Promise<void>
     .from(groupBuyDealsTable)
     .where(eq(groupBuyDealsTable.id, params.data.id))
     .limit(1);
-  if (!deal) {
+  if (!deal || deal.approvalStatus !== "approved") {
     res.status(404).json({ error: "Group buy deal not found" });
     return;
   }
@@ -197,7 +208,20 @@ router.post("/group-buys/:id/join", requireAuth, async (req, res): Promise<void>
   const totalAmount = unitPrice * quantity;
   const depositPaid = Math.round((totalAmount * money(deal.depositPercent)) / 100);
   const dueAmount = totalAmount - depositPaid;
-  const paymentRef = `${paymentMethod.toUpperCase()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+
+  let paymentRef: string;
+  try {
+    const charge = await paymentService.charge({
+      customerId,
+      amount: depositPaid,
+      method: paymentMethod,
+      purpose: `group-buy-deposit:${deal.id}`,
+    });
+    paymentRef = charge.reference;
+  } catch {
+    res.status(402).json({ error: "Deposit payment failed. Please try again." });
+    return;
+  }
 
   try {
     const [order] = await db
@@ -229,6 +253,111 @@ router.post("/group-buys/:id/join", requireAuth, async (req, res): Promise<void>
     }
     throw error;
   }
+});
+
+export async function campaignProgress(dealIds?: string[]) {
+  const rows = await db
+    .select({
+      dealId: groupBuyOrdersTable.dealId,
+      joined: sql<number>`coalesce(sum(${groupBuyOrdersTable.quantity}), 0)`.mapWith(Number),
+      deposits: sql<number>`coalesce(sum(${groupBuyOrdersTable.depositPaid}), 0)`.mapWith(Number),
+    })
+    .from(groupBuyOrdersTable)
+    .groupBy(groupBuyOrdersTable.dealId);
+  const map = new Map(rows.map((r) => [r.dealId, r]));
+  return (dealId: string) => map.get(dealId) ?? { dealId, joined: 0, deposits: 0 };
+}
+
+export function campaignView(
+  deal: GroupBuyDealRow,
+  progress: { joined: number; deposits: number },
+) {
+  return {
+    id: deal.id,
+    storeId: deal.storeId,
+    approvalStatus: deal.approvalStatus,
+    title: deal.title,
+    image: deal.image,
+    category: deal.category,
+    originalPrice: money(deal.originalPrice),
+    groupPrice: money(deal.groupPrice),
+    cashbackPercent: money(deal.cashbackPercent),
+    depositPercent: money(deal.depositPercent),
+    minParticipants: deal.minParticipants,
+    joinedCount: progress.joined,
+    depositCollected: progress.deposits,
+    endsAt: deal.endsAt.toISOString(),
+    status: deal.endsAt.getTime() < Date.now() ? "closed" : deal.status,
+    createdAt: deal.createdAt.toISOString(),
+  };
+}
+
+router.get("/merchant/group-buys", requireAuth, async (_req, res): Promise<void> => {
+  await ensureSeeded();
+  const store = await getMerchantStore(res.locals.userId as string);
+  if (!store) {
+    res.json(ListMerchantGroupBuysResponse.parse([]));
+    return;
+  }
+  const deals = await db
+    .select()
+    .from(groupBuyDealsTable)
+    .where(eq(groupBuyDealsTable.storeId, store.id));
+  const progress = await campaignProgress();
+  res.json(
+    ListMerchantGroupBuysResponse.parse(
+      deals
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .map((d) => campaignView(d, progress(d.id))),
+    ),
+  );
+});
+
+router.post("/merchant/group-buys", requireAuth, async (req, res): Promise<void> => {
+  const parsed = CreateMerchantGroupBuyBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid campaign" });
+    return;
+  }
+  const endsAt = new Date(parsed.data.endsAt);
+  if (Number.isNaN(endsAt.getTime()) || endsAt.getTime() <= Date.now()) {
+    res.status(400).json({ error: "Campaign end date must be in the future" });
+    return;
+  }
+  if (parsed.data.groupPrice >= parsed.data.originalPrice) {
+    res.status(400).json({ error: "Group price must be below the original price" });
+    return;
+  }
+  const store = await getMerchantStore(res.locals.userId as string);
+  if (!store) {
+    res.status(404).json({ error: "Create your store before launching campaigns" });
+    return;
+  }
+
+  const [deal] = await db
+    .insert(groupBuyDealsTable)
+    .values({
+      id: `gbc_${crypto.randomUUID()}`,
+      storeId: store.id,
+      approvalStatus: "pending",
+      title: parsed.data.title.trim(),
+      image:
+        parsed.data.image?.trim() ||
+        "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&w=600&q=80",
+      category: parsed.data.category.trim(),
+      originalPrice: String(parsed.data.originalPrice),
+      groupPrice: String(parsed.data.groupPrice),
+      cashbackPercent: String(parsed.data.cashbackPercent),
+      depositPercent: String(parsed.data.depositPercent),
+      minParticipants: Math.floor(parsed.data.minParticipants),
+      endsAt,
+      status: "open",
+    })
+    .returning();
+
+  res
+    .status(201)
+    .json(CreateMerchantGroupBuyResponse.parse(campaignView(deal, { joined: 0, deposits: 0 })));
 });
 
 export default router;

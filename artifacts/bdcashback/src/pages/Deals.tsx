@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Flame, Clock, ArrowRight, Zap, Star } from "lucide-react";
-import { useGetMarketplaceSummary } from "@workspace/api-client-react";
+import { useGetMarketplaceSummary, useListPromoDeals } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const FLASH_DEALS = [
@@ -89,6 +89,70 @@ const FEATURED_DEALS = [
     color: "bg-sky-50 text-sky-700 border-sky-200",
   },
 ];
+
+function MerchantPromoDeals() {
+  const { data, isLoading } = useListPromoDeals();
+  const deals = data ?? [];
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center gap-2">
+        <h2 className="text-xl font-bold">Merchant Campaigns</h2>
+        {deals.length > 0 && (
+          <Badge className="bg-red-100 text-red-700 border-none uppercase text-[10px]">
+            {deals.length} live
+          </Badge>
+        )}
+      </div>
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[1, 2].map((i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
+        </div>
+      ) : deals.length === 0 ? (
+        <Card className="border-border/60">
+          <CardContent className="p-6 text-center text-sm text-muted-foreground">
+            No merchant campaigns are live right now — check back soon.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {deals.map((deal) => (
+            <Card key={deal.id} className="border-border/60 hover:shadow-md transition-all">
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className="w-14 h-14 rounded-xl bg-red-50 text-red-600 border border-red-200 flex items-center justify-center shrink-0 font-black text-lg">
+                  -{Math.round(deal.discountPercent)}%
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-sm">{deal.title}</span>
+                    {deal.featured && (
+                      <Badge className="bg-yellow-100 text-yellow-700 border-none text-[10px] uppercase">
+                        Featured
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed line-clamp-2">
+                    {deal.description || `${Math.round(deal.discountPercent)}% off at ${deal.storeName}`}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">{deal.storeName}</span>
+                    <span>·</span>
+                    <Clock className="w-3 h-3" />
+                    <span>
+                      Ends {new Intl.DateTimeFormat("en-BD", { month: "short", day: "numeric" }).format(new Date(deal.endsAt))}
+                    </span>
+                  </div>
+                </div>
+                <Link href="/products">
+                  <ArrowRight className="w-4 h-4 text-muted-foreground hover:text-primary transition-colors shrink-0" />
+                </Link>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
 
 export default function Deals() {
   const { data, isLoading } = useGetMarketplaceSummary();
@@ -187,6 +251,9 @@ export default function Deals() {
           </div>
         )}
       </section>
+
+      {/* Live merchant promotional deals */}
+      <MerchantPromoDeals />
 
       {/* Store deals */}
       <section className="space-y-4">

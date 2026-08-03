@@ -177,6 +177,10 @@ export type MerchantOrder = typeof merchantOrdersTable.$inferSelect;
 
 export const groupBuyDealsTable = pgTable("group_buy_deals", {
   id: text("id").primaryKey(),
+  /** Owning merchant store; null for platform-seeded campaigns. */
+  storeId: text("store_id"),
+  /** pending | approved | rejected — merchant campaigns need admin approval. */
+  approvalStatus: text("approval_status").notNull().default("approved"),
   title: text("title").notNull(),
   image: text("image").notNull(),
   category: text("category").notNull(),

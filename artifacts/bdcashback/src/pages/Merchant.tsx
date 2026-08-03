@@ -21,6 +21,7 @@ import {
   CircleDollarSign,
   Image as ImageIcon,
   LayoutDashboard,
+  Megaphone,
   MoreHorizontal,
   Package,
   Pencil,
@@ -394,6 +395,7 @@ export default function Merchant() {
           <p className="mt-2 max-w-2xl text-muted-foreground">{data?.store?.description || "Manage your products, inventory, and orders from one place."}</p>
         </div>
         <div className="flex gap-2">
+          <Link href="/merchant/promotions"><Button variant="outline"><Megaphone className="mr-2 h-4 w-4" /> Promotions</Button></Link>
           <Button variant="outline" onClick={refresh} disabled={isLoading}><RefreshCw className="mr-2 h-4 w-4" /> Refresh</Button>
           <Button onClick={() => { setEditingProduct(null); setShowProductDialog(true); }}><Plus className="mr-2 h-4 w-4" /> Add product</Button>
         </div>

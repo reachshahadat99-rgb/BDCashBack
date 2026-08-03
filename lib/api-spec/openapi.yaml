@@ -18,6 +18,14 @@ tags:
     description: Merchant store and catalog management
   - name: groupBuy
     description: Group buy deals and reservations
+  - name: coupons
+    description: Discount coupons
+  - name: promoDeals
+    description: Merchant promotional deals
+  - name: giftCards
+    description: Discounted digital gift cards
+  - name: admin
+    description: Platform administration
 paths:
   /healthz:
     get:
@@ -315,6 +323,810 @@ paths:
                   $ref: "#/components/schemas/MerchantOrder"
         "401":
           description: Authentication required
+  /coupons:
+    get:
+      operationId: listPublicCoupons
+      tags: [coupons]
+      summary: List approved, currently valid coupons
+      responses:
+        "200":
+          description: Coupons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Coupon"
+  /coupons/validate:
+    post:
+      operationId: validateCoupon
+      tags: [coupons]
+      summary: Validate a coupon against an order subtotal (checkout integration point)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ValidateCouponRequest"
+      responses:
+        "200":
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CouponValidationResult"
+  /promo-deals:
+    get:
+      operationId: listPromoDeals
+      tags: [promoDeals]
+      summary: List approved promotional deals in their campaign window
+      parameters:
+        - name: featured
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Promotional deals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PromoDeal"
+  /gift-cards:
+    get:
+      operationId: listGiftCardBrands
+      tags: [giftCards]
+      summary: List active gift card brands with available cards
+      responses:
+        "200":
+          description: Gift card brands
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GiftCardBrandView"
+  /gift-cards/{id}/purchase:
+    post:
+      operationId: purchaseGiftCard
+      tags: [giftCards]
+      summary: Purchase a discounted gift card (delivered digitally)
+      security: [{ clerkSession: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseGiftCardRequest"
+      responses:
+        "201":
+          description: Gift card delivered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiftCardPurchase"
+        "400":
+          description: Invalid request
+        "401":
+          description: Authentication required
+        "404":
+          description: Gift card not found
+        "409":
+          description: Out of stock or unavailable
+  /gift-cards/orders:
+    get:
+      operationId: listMyGiftCardOrders
+      tags: [giftCards]
+      summary: List the signed-in customer's purchased gift cards
+      security: [{ clerkSession: [] }]
+      responses:
+        "200":
+          description: Purchased gift cards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GiftCardPurchase"
+        "401":
+          description: Authentication required
+  /merchant/coupons:
+    get:
+      operationId: listMerchantCoupons
+      tags: [coupons]
+      summary: List coupons for the signed-in merchant store
+      security: [{ clerkSession: [] }]
+      responses:
+        "200":
+          description: Merchant coupons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Coupon"
+        "401":
+          description: Authentication required
+    post:
+      operationId: createMerchantCoupon
+      tags: [coupons]
+      summary: Create a store coupon (pending admin approval)
+      security: [{ clerkSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCouponRequest"
+      responses:
+        "201":
+          description: Coupon created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Coupon"
+        "400":
+          description: Invalid coupon
+        "401":
+          description: Authentication required
+        "404":
+          description: Store not found
+        "409":
+          description: Code already in use
+  /merchant/coupons/{id}:
+    patch:
+      operationId: updateMerchantCoupon
+      tags: [coupons]
+      summary: Update or archive a store coupon
+      security: [{ clerkSession: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCouponRequest"
+      responses:
+        "200":
+          description: Coupon updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Coupon"
+        "400":
+          description: Invalid update
+        "401":
+          description: Authentication required
+        "404":
+          description: Coupon not found
+  /merchant/deals:
+    get:
+      operationId: listMerchantDeals
+      tags: [promoDeals]
+      summary: List promotional deals for the signed-in merchant store
+      security: [{ clerkSession: [] }]
+      responses:
+        "200":
+          description: Merchant deals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PromoDeal"
+        "401":
+          description: Authentication required
+    post:
+      operationId: createMerchantDeal
+      tags: [promoDeals]
+      summary: Create a promotional deal (pending admin approval)
+      security: [{ clerkSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePromoDealRequest"
+      responses:
+        "201":
+          description: Deal created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromoDeal"
+        "400":
+          description: Invalid deal
+        "401":
+          description: Authentication required
+        "404":
+          description: Store not found
+  /merchant/deals/{id}:
+    patch:
+      operationId: updateMerchantDeal
+      tags: [promoDeals]
+      summary: Update a promotional deal owned by the signed-in merchant
+      security: [{ clerkSession: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePromoDealRequest"
+      responses:
+        "200":
+          description: Deal updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromoDeal"
+        "400":
+          description: Invalid update
+        "401":
+          description: Authentication required
+        "404":
+          description: Deal not found
+  /merchant/group-buys:
+    get:
+      operationId: listMerchantGroupBuys
+      tags: [groupBuy]
+      summary: List group buy campaigns for the signed-in merchant store
+      security: [{ clerkSession: [] }]
+      responses:
+        "200":
+          description: Merchant group buy campaigns
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GroupBuyCampaign"
+        "401":
+          description: Authentication required
+    post:
+      operationId: createMerchantGroupBuy
+      tags: [groupBuy]
+      summary: Create a group buy campaign (pending admin approval)
+      security: [{ clerkSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGroupBuyCampaignRequest"
+      responses:
+        "201":
+          description: Campaign created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupBuyCampaign"
+        "400":
+          description: Invalid campaign
+        "401":
+          description: Authentication required
+        "404":
+          description: Store not found
+  /admin/me:
+    get:
+      operationId: getAdminMe
+      tags: [admin]
+      summary: Check whether the signed-in user is a platform admin
+      security: [{ clerkSession: [] }]
+      responses:
+        "200":
+          description: Admin status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMe"
+        "401":
+          description: Authentication required
+  /admin/claim:
+    post:
+      operationId: claimAdmin
+      tags: [admin]
+      summary: Claim the first platform admin seat (only when no admin exists)
+      security: [{ clerkSession: [] }]
+      responses:
+        "201":
+          description: Admin seat claimed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMe"
+        "401":
+          description: Authentication required
+        "409":
+          description: An admin already exists
+  /admin/merchants:
+    get:
+      operationId: listAdminMerchants
+      tags: [admin]
+      summary: List merchant stores for approval and management
+      security: [{ clerkSession: [] }]
+      responses:
+        "200":
+          description: Merchant stores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminMerchant"
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+  /admin/merchants/{id}:
+    patch:
+      operationId: updateAdminMerchant
+      tags: [admin]
+      summary: Approve or suspend a merchant store
+      security: [{ clerkSession: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMerchantStatusRequest"
+      responses:
+        "200":
+          description: Merchant updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMerchant"
+        "400":
+          description: Invalid status
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+        "404":
+          description: Store not found
+  /admin/coupons:
+    get:
+      operationId: listAdminCoupons
+      tags: [admin]
+      summary: List all coupons including pending merchant coupons
+      security: [{ clerkSession: [] }]
+      responses:
+        "200":
+          description: All coupons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Coupon"
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+    post:
+      operationId: createAdminCoupon
+      tags: [admin]
+      summary: Create a global coupon (auto-approved)
+      security: [{ clerkSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCouponRequest"
+      responses:
+        "201":
+          description: Global coupon created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Coupon"
+        "400":
+          description: Invalid coupon
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+        "409":
+          description: Code already in use
+  /admin/coupons/{id}:
+    patch:
+      operationId: moderateAdminCoupon
+      tags: [admin]
+      summary: Approve, reject, or archive any coupon
+      security: [{ clerkSession: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModerationRequest"
+      responses:
+        "200":
+          description: Coupon updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Coupon"
+        "400":
+          description: Invalid status
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+        "404":
+          description: Coupon not found
+  /admin/deals:
+    get:
+      operationId: listAdminDeals
+      tags: [admin]
+      summary: List all promotional deals including pending ones
+      security: [{ clerkSession: [] }]
+      responses:
+        "200":
+          description: All promotional deals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PromoDeal"
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+  /admin/deals/{id}:
+    patch:
+      operationId: moderateAdminDeal
+      tags: [admin]
+      summary: Approve, reject, remove, or feature a promotional deal
+      security: [{ clerkSession: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DealModerationRequest"
+      responses:
+        "200":
+          description: Deal updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromoDeal"
+        "400":
+          description: Invalid moderation
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+        "404":
+          description: Deal not found
+  /admin/group-buys:
+    get:
+      operationId: listAdminGroupBuys
+      tags: [admin]
+      summary: List all group buy campaigns including pending ones
+      security: [{ clerkSession: [] }]
+      responses:
+        "200":
+          description: All group buy campaigns
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GroupBuyCampaign"
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+  /admin/group-buys/{id}:
+    patch:
+      operationId: moderateAdminGroupBuy
+      tags: [admin]
+      summary: Approve or reject a group buy campaign
+      security: [{ clerkSession: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModerationRequest"
+      responses:
+        "200":
+          description: Campaign updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupBuyCampaign"
+        "400":
+          description: Invalid status
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+        "404":
+          description: Campaign not found
+  /admin/gift-card-brands:
+    get:
+      operationId: listAdminGiftCardBrands
+      tags: [admin]
+      summary: List all gift card brands including inactive ones
+      security: [{ clerkSession: [] }]
+      responses:
+        "200":
+          description: Gift card brands
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GiftCardBrandView"
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+    post:
+      operationId: createAdminGiftCardBrand
+      tags: [admin]
+      summary: Create a gift card brand
+      security: [{ clerkSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGiftCardBrandRequest"
+      responses:
+        "201":
+          description: Brand created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiftCardBrandView"
+        "400":
+          description: Invalid brand
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+  /admin/gift-card-brands/{id}:
+    patch:
+      operationId: updateAdminGiftCardBrand
+      tags: [admin]
+      summary: Update a gift card brand
+      security: [{ clerkSession: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGiftCardBrandRequest"
+      responses:
+        "200":
+          description: Brand updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiftCardBrandView"
+        "400":
+          description: Invalid update
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+        "404":
+          description: Brand not found
+  /admin/gift-cards:
+    post:
+      operationId: createAdminGiftCard
+      tags: [admin]
+      summary: Add a gift card denomination to a brand
+      security: [{ clerkSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGiftCardRequest"
+      responses:
+        "201":
+          description: Gift card created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiftCardView"
+        "400":
+          description: Invalid gift card
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+        "404":
+          description: Brand not found
+  /admin/gift-cards/{id}:
+    patch:
+      operationId: updateAdminGiftCard
+      tags: [admin]
+      summary: Update a gift card's price, stock, or availability
+      security: [{ clerkSession: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGiftCardRequest"
+      responses:
+        "200":
+          description: Gift card updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GiftCardView"
+        "400":
+          description: Invalid update
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+        "404":
+          description: Gift card not found
+  /admin/gift-card-orders:
+    get:
+      operationId: listAdminGiftCardOrders
+      tags: [admin]
+      summary: List gift card delivery records
+      security: [{ clerkSession: [] }]
+      responses:
+        "200":
+          description: Gift card orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GiftCardPurchase"
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+  /admin/fee-rules:
+    get:
+      operationId: listAdminFeeRules
+      tags: [admin]
+      summary: List category-wise Success Fee rules
+      security: [{ clerkSession: [] }]
+      responses:
+        "200":
+          description: Success fee rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FeeRule"
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+    post:
+      operationId: createAdminFeeRule
+      tags: [admin]
+      summary: Create a Success Fee rule for a category
+      security: [{ clerkSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFeeRuleRequest"
+      responses:
+        "201":
+          description: Fee rule created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeeRule"
+        "400":
+          description: Invalid rule
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+        "404":
+          description: Category not found
+        "409":
+          description: Rule already exists for category
+  /admin/fee-rules/{id}:
+    patch:
+      operationId: updateAdminFeeRule
+      tags: [admin]
+      summary: Update a Success Fee rule
+      security: [{ clerkSession: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFeeRuleRequest"
+      responses:
+        "200":
+          description: Fee rule updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeeRule"
+        "400":
+          description: Invalid update
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+        "404":
+          description: Rule not found
 components:
   securitySchemes:
     clerkSession:
@@ -541,6 +1353,269 @@ components:
         status: { type: string }
         createdAt: { type: string }
       required: [id, dealId, fullName, phone, address, quantity, unitPrice, totalAmount, depositPaid, dueAmount, paymentMethod, paymentRef, status, createdAt]
+    Coupon:
+      type: object
+      properties:
+        id: { type: string }
+        scope: { type: string }
+        storeId:
+          type: ["string", "null"]
+        storeName:
+          type: ["string", "null"]
+        code: { type: string }
+        title: { type: string }
+        discountType: { type: string }
+        discountValue: { type: number }
+        minOrderValue: { type: number }
+        maxUses: { type: number }
+        usedCount: { type: number }
+        categoryId:
+          type: ["string", "null"]
+        startsAt: { type: string }
+        endsAt: { type: string }
+        status: { type: string }
+        createdAt: { type: string }
+      required: [id, scope, storeId, storeName, code, title, discountType, discountValue, minOrderValue, maxUses, usedCount, categoryId, startsAt, endsAt, status, createdAt]
+    CreateCouponRequest:
+      type: object
+      properties:
+        code: { type: string, minLength: 3, maxLength: 30 }
+        title: { type: string, minLength: 1, maxLength: 120 }
+        discountType: { type: string, enum: [percent, fixed] }
+        discountValue: { type: number, minimum: 0 }
+        minOrderValue: { type: number, minimum: 0 }
+        maxUses: { type: number, minimum: 0 }
+        categoryId: { type: string }
+        startsAt: { type: string }
+        endsAt: { type: string }
+      required: [code, title, discountType, discountValue, startsAt, endsAt]
+    UpdateCouponRequest:
+      type: object
+      properties:
+        title: { type: string }
+        discountValue: { type: number, minimum: 0 }
+        minOrderValue: { type: number, minimum: 0 }
+        maxUses: { type: number, minimum: 0 }
+        startsAt: { type: string }
+        endsAt: { type: string }
+        status: { type: string, enum: [pending, archived] }
+    ValidateCouponRequest:
+      type: object
+      properties:
+        code: { type: string }
+        subtotal: { type: number, minimum: 0 }
+        categoryId: { type: string }
+        storeId: { type: string }
+      required: [code, subtotal]
+    CouponValidationResult:
+      type: object
+      properties:
+        valid: { type: boolean }
+        discountAmount: { type: number }
+        reason:
+          type: ["string", "null"]
+        coupon:
+          anyOf:
+            - $ref: "#/components/schemas/Coupon"
+            - type: "null"
+      required: [valid, discountAmount, reason, coupon]
+    PromoDeal:
+      type: object
+      properties:
+        id: { type: string }
+        storeId: { type: string }
+        storeName: { type: string }
+        title: { type: string }
+        description: { type: string }
+        imageUrl: { type: string }
+        discountPercent: { type: number }
+        startsAt: { type: string }
+        endsAt: { type: string }
+        status: { type: string }
+        featured: { type: boolean }
+        createdAt: { type: string }
+      required: [id, storeId, storeName, title, description, imageUrl, discountPercent, startsAt, endsAt, status, featured, createdAt]
+    CreatePromoDealRequest:
+      type: object
+      properties:
+        title: { type: string, minLength: 1, maxLength: 160 }
+        description: { type: string, maxLength: 1000 }
+        imageUrl: { type: string }
+        discountPercent: { type: number, minimum: 1, maximum: 95 }
+        startsAt: { type: string }
+        endsAt: { type: string }
+      required: [title, discountPercent, startsAt, endsAt]
+    UpdatePromoDealRequest:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string }
+        imageUrl: { type: string }
+        discountPercent: { type: number, minimum: 1, maximum: 95 }
+        startsAt: { type: string }
+        endsAt: { type: string }
+    DealModerationRequest:
+      type: object
+      properties:
+        status: { type: string, enum: [approved, rejected, removed] }
+        featured: { type: boolean }
+    ModerationRequest:
+      type: object
+      properties:
+        status: { type: string, enum: [approved, rejected, archived] }
+      required: [status]
+    GroupBuyCampaign:
+      type: object
+      properties:
+        id: { type: string }
+        storeId:
+          type: ["string", "null"]
+        approvalStatus: { type: string }
+        title: { type: string }
+        image: { type: string }
+        category: { type: string }
+        originalPrice: { type: number }
+        groupPrice: { type: number }
+        cashbackPercent: { type: number }
+        depositPercent: { type: number }
+        minParticipants: { type: number }
+        joinedCount: { type: number }
+        depositCollected: { type: number }
+        endsAt: { type: string }
+        status: { type: string }
+        createdAt: { type: string }
+      required: [id, storeId, approvalStatus, title, image, category, originalPrice, groupPrice, cashbackPercent, depositPercent, minParticipants, joinedCount, depositCollected, endsAt, status, createdAt]
+    CreateGroupBuyCampaignRequest:
+      type: object
+      properties:
+        title: { type: string, minLength: 1, maxLength: 160 }
+        image: { type: string }
+        category: { type: string, minLength: 1 }
+        originalPrice: { type: number, minimum: 1 }
+        groupPrice: { type: number, minimum: 1 }
+        cashbackPercent: { type: number, minimum: 0, maximum: 100 }
+        depositPercent: { type: number, minimum: 5, maximum: 100 }
+        minParticipants: { type: number, minimum: 2 }
+        endsAt: { type: string }
+      required: [title, category, originalPrice, groupPrice, cashbackPercent, depositPercent, minParticipants, endsAt]
+    AdminMe:
+      type: object
+      properties:
+        isAdmin: { type: boolean }
+        canClaim: { type: boolean }
+      required: [isAdmin, canClaim]
+    AdminMerchant:
+      type: object
+      properties:
+        id: { type: string }
+        ownerId: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        status: { type: string }
+        productCount: { type: number }
+        createdAt: { type: string }
+      required: [id, ownerId, name, slug, status, productCount, createdAt]
+    UpdateMerchantStatusRequest:
+      type: object
+      properties:
+        status: { type: string, enum: [active, suspended] }
+      required: [status]
+    GiftCardView:
+      type: object
+      properties:
+        id: { type: string }
+        brandId: { type: string }
+        faceValue: { type: number }
+        price: { type: number }
+        stock: { type: number }
+        active: { type: boolean }
+      required: [id, brandId, faceValue, price, stock, active]
+    GiftCardBrandView:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        logoUrl: { type: string }
+        description: { type: string }
+        active: { type: boolean }
+        cards:
+          type: array
+          items:
+            $ref: "#/components/schemas/GiftCardView"
+      required: [id, name, logoUrl, description, active, cards]
+    CreateGiftCardBrandRequest:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        logoUrl: { type: string }
+        description: { type: string, maxLength: 500 }
+      required: [name]
+    UpdateGiftCardBrandRequest:
+      type: object
+      properties:
+        name: { type: string }
+        logoUrl: { type: string }
+        description: { type: string }
+        active: { type: boolean }
+    CreateGiftCardRequest:
+      type: object
+      properties:
+        brandId: { type: string }
+        faceValue: { type: number, minimum: 1 }
+        price: { type: number, minimum: 1 }
+        stock: { type: number, minimum: 0 }
+      required: [brandId, faceValue, price, stock]
+    UpdateGiftCardRequest:
+      type: object
+      properties:
+        price: { type: number, minimum: 1 }
+        stock: { type: number, minimum: 0 }
+        active: { type: boolean }
+    PurchaseGiftCardRequest:
+      type: object
+      properties:
+        paymentMethod: { type: string, enum: [bkash, nagad, card] }
+      required: [paymentMethod]
+    GiftCardPurchase:
+      type: object
+      properties:
+        id: { type: string }
+        cardId: { type: string }
+        brandName: { type: string }
+        faceValue: { type: number }
+        pricePaid: { type: number }
+        paymentMethod: { type: string }
+        paymentRef: { type: string }
+        cardCode: { type: string }
+        status: { type: string }
+        createdAt: { type: string }
+      required: [id, cardId, brandName, faceValue, pricePaid, paymentMethod, paymentRef, cardCode, status, createdAt]
+    FeeRule:
+      type: object
+      properties:
+        id: { type: string }
+        categoryId: { type: string }
+        categoryName: { type: string }
+        feePercent: { type: number }
+        customerSharePercent: { type: number }
+        returnPeriodDays: { type: number }
+        active: { type: boolean }
+      required: [id, categoryId, categoryName, feePercent, customerSharePercent, returnPeriodDays, active]
+    CreateFeeRuleRequest:
+      type: object
+      properties:
+        categoryId: { type: string }
+        feePercent: { type: number, minimum: 0, maximum: 50 }
+        customerSharePercent: { type: number, minimum: 0, maximum: 100 }
+        returnPeriodDays: { type: number, minimum: 0, maximum: 60 }
+      required: [categoryId, feePercent]
+    UpdateFeeRuleRequest:
+      type: object
+      properties:
+        feePercent: { type: number, minimum: 0, maximum: 50 }
+        customerSharePercent: { type: number, minimum: 0, maximum: 100 }
+        returnPeriodDays: { type: number, minimum: 0, maximum: 60 }
+        active: { type: boolean }
     MerchantSummary:
       type: object
       properties:

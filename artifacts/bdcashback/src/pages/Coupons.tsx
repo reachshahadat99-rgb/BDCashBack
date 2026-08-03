@@ -3,93 +3,43 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Ticket, Copy, CheckCheck, Search, Clock, Tag } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Ticket, Copy, CheckCheck, Search, Clock, Tag, Store } from "lucide-react";
+import { cn, formatCurrency } from "@/lib/utils";
+import { useListPublicCoupons, type Coupon } from "@workspace/api-client-react";
 
-const COUPONS = [
-  {
-    id: "WELCOME20",
-    code: "WELCOME20",
-    title: "Welcome Discount",
-    description: "20% off your first purchase at any partner store",
-    discount: "20% OFF",
-    minSpend: 500,
-    expiresAt: "2026-08-31",
-    category: "All Stores",
-    color: "from-violet-500 to-purple-600",
-    badge: "New User",
-  },
-  {
-    id: "FOOD15",
-    code: "FOOD15",
-    title: "Food & Dining Special",
-    description: "Extra 15% cashback on all food orders this week",
-    discount: "15% CB",
-    minSpend: 300,
-    expiresAt: "2026-08-07",
-    category: "Food & Dining",
-    color: "from-orange-400 to-red-500",
-    badge: "Hot",
-  },
-  {
-    id: "TECH500",
-    code: "TECH500",
-    title: "Electronics Flat Off",
-    description: "৳500 instant discount on electronics above ৳10,000",
-    discount: "৳500 OFF",
-    minSpend: 10000,
-    expiresAt: "2026-08-15",
-    category: "Electronics",
-    color: "from-blue-500 to-cyan-600",
-    badge: null,
-  },
-  {
-    id: "BEAUTY10",
-    code: "BEAUTY10",
-    title: "Beauty & Skincare",
-    description: "10% off all beauty products, no minimum spend",
-    discount: "10% OFF",
-    minSpend: 0,
-    expiresAt: "2026-08-20",
-    category: "Beauty",
-    color: "from-pink-400 to-rose-500",
-    badge: "Limited",
-  },
-  {
-    id: "FASHION25",
-    code: "FASHION25",
-    title: "Style Season Sale",
-    description: "25% cashback on fashion items from Aarong & partners",
-    discount: "25% CB",
-    minSpend: 1000,
-    expiresAt: "2026-08-09",
-    category: "Fashion",
-    color: "from-teal-500 to-emerald-600",
-    badge: "Ending soon",
-  },
-  {
-    id: "TRAVEL8",
-    code: "TRAVEL8",
-    title: "Travel & Getaway",
-    description: "8% cashback on hotel and resort bookings",
-    discount: "8% CB",
-    minSpend: 5000,
-    expiresAt: "2026-09-30",
-    category: "Travel",
-    color: "from-sky-400 to-blue-600",
-    badge: null,
-  },
+const COLORS = [
+  "from-violet-500 to-purple-600",
+  "from-orange-400 to-red-500",
+  "from-blue-500 to-cyan-600",
+  "from-pink-400 to-rose-500",
+  "from-teal-500 to-emerald-600",
+  "from-sky-400 to-blue-600",
 ];
+
+function colorFor(id: string) {
+  let hash = 0;
+  for (const ch of id) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  return COLORS[hash % COLORS.length];
+}
+
+function discountLabel(coupon: Coupon) {
+  return coupon.discountType === "percent"
+    ? `${coupon.discountValue}% OFF`
+    : `${formatCurrency(coupon.discountValue)} OFF`;
+}
 
 export default function Coupons() {
   const [search, setSearch] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
+  const { data, isLoading, isError, refetch } = useListPublicCoupons();
 
-  const filtered = COUPONS.filter(
+  const coupons = data ?? [];
+  const filtered = coupons.filter(
     (c) =>
       c.title.toLowerCase().includes(search.toLowerCase()) ||
-      c.category.toLowerCase().includes(search.toLowerCase()) ||
-      c.code.toLowerCase().includes(search.toLowerCase()),
+      c.code.toLowerCase().includes(search.toLowerCase()) ||
+      (c.storeName ?? "").toLowerCase().includes(search.toLowerCase()),
   );
 
   function copy(code: string) {
@@ -104,7 +54,6 @@ export default function Coupons() {
 
   return (
     <div className="container mx-auto px-4 py-6 md:py-10 space-y-8 animate-in">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-100 text-violet-700 text-sm font-semibold mb-2">
@@ -112,7 +61,9 @@ export default function Coupons() {
             Coupons & Promo Codes
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight">Save more, earn more</h1>
-          <p className="text-muted-foreground mt-1">Exclusive promo codes to stack on top of your cashback.</p>
+          <p className="text-muted-foreground mt-1">
+            Live promo codes from BDCashBack and partner stores — apply them at checkout.
+          </p>
         </div>
         <div className="relative w-full md:w-72">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -125,54 +76,75 @@ export default function Coupons() {
         </div>
       </div>
 
-      {/* Coupons grid */}
-      {filtered.length === 0 ? (
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-52 rounded-xl" />
+          ))}
+        </div>
+      ) : isError ? (
+        <Card className="border-destructive/40">
+          <CardContent className="p-6 text-center text-sm text-muted-foreground">
+            Couldn't load coupons.{" "}
+            <button className="underline font-medium" onClick={() => void refetch()}>
+              Try again
+            </button>
+          </CardContent>
+        </Card>
+      ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <Ticket className="w-12 h-12 text-muted-foreground mb-4" />
-          <h3 className="font-semibold text-lg">No coupons found</h3>
-          <p className="text-muted-foreground mt-1">Try a different search term.</p>
+          <h3 className="font-semibold text-lg">
+            {coupons.length === 0 ? "No live coupons right now" : "No coupons found"}
+          </h3>
+          <p className="text-muted-foreground mt-1">
+            {coupons.length === 0
+              ? "Check back soon — new codes drop all the time."
+              : "Try a different search term."}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map((coupon) => (
             <Card key={coupon.id} className="overflow-hidden border-border/60 hover:shadow-md transition-all">
-              {/* Color band */}
-              <div className={cn("h-2 w-full bg-gradient-to-r", coupon.color)} />
+              <div className={cn("h-2 w-full bg-gradient-to-r", colorFor(coupon.id))} />
               <CardContent className="p-5 space-y-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-lg">{coupon.discount}</span>
-                      {coupon.badge && (
-                        <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
-                          {coupon.badge}
-                        </Badge>
-                      )}
-                    </div>
-                    <h3 className="font-semibold text-sm leading-tight">{coupon.title}</h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{coupon.description}</p>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-lg">{discountLabel(coupon)}</span>
+                    {coupon.scope === "global" ? (
+                      <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
+                        All stores
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px] gap-1">
+                        <Store className="w-3 h-3" /> {coupon.storeName}
+                      </Badge>
+                    )}
                   </div>
+                  <h3 className="font-semibold text-sm leading-tight">{coupon.title}</h3>
                 </div>
 
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Tag className="w-3.5 h-3.5" />
-                  <span>{coupon.category}</span>
-                  {coupon.minSpend > 0 && (
-                    <>
-                      <span>·</span>
-                      <span>Min. ৳{coupon.minSpend.toLocaleString()}</span>
-                    </>
+                <div className="flex items-center flex-wrap gap-2 text-xs text-muted-foreground">
+                  {coupon.minOrderValue > 0 && (
+                    <span className="flex items-center gap-1">
+                      <Tag className="w-3.5 h-3.5" /> Min. {formatCurrency(coupon.minOrderValue)}
+                    </span>
                   )}
-                  <span>·</span>
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>Expires {formatDate(coupon.expiresAt)}</span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" /> Expires {formatDate(coupon.endsAt)}
+                  </span>
+                  {coupon.maxUses > 0 && (
+                    <span>{Math.max(0, coupon.maxUses - coupon.usedCount)} uses left</span>
+                  )}
                 </div>
 
-                {/* Code copy row */}
                 <div className="flex items-center gap-2">
                   <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-primary/40 bg-primary/5">
                     <Ticket className="w-4 h-4 text-primary shrink-0" />
-                    <span className="font-mono font-bold text-sm tracking-widest text-primary flex-1">{coupon.code}</span>
+                    <span className="font-mono font-bold text-sm tracking-widest text-primary flex-1">
+                      {coupon.code}
+                    </span>
                   </div>
                   <Button
                     size="sm"

@@ -13,6 +13,8 @@ import Deals from './pages/Deals';
 import Cashback from './pages/Cashback';
 import GroupBuy from './pages/GroupBuy';
 import GiftCards from './pages/GiftCards';
+import MerchantPromotions from './pages/MerchantPromotions';
+import Admin from './pages/Admin';
 import { useEffect, useRef } from 'react';
 
 const queryClient = new QueryClient({
@@ -175,6 +177,8 @@ function AppRoutes() {
       <Route path="/products" component={Products} />
       <Route path="/wallet" component={Wallet} />
       <Route path="/merchant" component={Merchant} />
+      <Route path="/merchant/promotions" component={MerchantPromotions} />
+      <Route path="/admin" component={Admin} />
       <Route path="/coupons" component={Coupons} />
       <Route path="/deals" component={Deals} />
       <Route path="/cashback" component={Cashback} />

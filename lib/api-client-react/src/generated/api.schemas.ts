@@ -195,6 +195,372 @@ export interface JoinGroupBuyRequest {
   paymentMethod: JoinGroupBuyRequestPaymentMethod;
 }
 
+export interface Coupon {
+  id: string;
+  scope: string;
+  /** @nullable */
+  storeId: string | null;
+  /** @nullable */
+  storeName: string | null;
+  code: string;
+  title: string;
+  discountType: string;
+  discountValue: number;
+  minOrderValue: number;
+  maxUses: number;
+  usedCount: number;
+  /** @nullable */
+  categoryId: string | null;
+  startsAt: string;
+  endsAt: string;
+  status: string;
+  createdAt: string;
+}
+
+export type CreateCouponRequestDiscountType = typeof CreateCouponRequestDiscountType[keyof typeof CreateCouponRequestDiscountType];
+
+
+export const CreateCouponRequestDiscountType = {
+  percent: 'percent',
+  fixed: 'fixed',
+} as const;
+
+export interface CreateCouponRequest {
+  /**
+     * @minLength 3
+     * @maxLength 30
+     */
+  code: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  title: string;
+  discountType: CreateCouponRequestDiscountType;
+  /** @minimum 0 */
+  discountValue: number;
+  /** @minimum 0 */
+  minOrderValue?: number;
+  /** @minimum 0 */
+  maxUses?: number;
+  categoryId?: string;
+  startsAt: string;
+  endsAt: string;
+}
+
+export type UpdateCouponRequestStatus = typeof UpdateCouponRequestStatus[keyof typeof UpdateCouponRequestStatus];
+
+
+export const UpdateCouponRequestStatus = {
+  pending: 'pending',
+  archived: 'archived',
+} as const;
+
+export interface UpdateCouponRequest {
+  title?: string;
+  /** @minimum 0 */
+  discountValue?: number;
+  /** @minimum 0 */
+  minOrderValue?: number;
+  /** @minimum 0 */
+  maxUses?: number;
+  startsAt?: string;
+  endsAt?: string;
+  status?: UpdateCouponRequestStatus;
+}
+
+export interface ValidateCouponRequest {
+  code: string;
+  /** @minimum 0 */
+  subtotal: number;
+  categoryId?: string;
+  storeId?: string;
+}
+
+export interface CouponValidationResult {
+  valid: boolean;
+  discountAmount: number;
+  /** @nullable */
+  reason: string | null;
+  coupon: Coupon | null;
+}
+
+export interface PromoDeal {
+  id: string;
+  storeId: string;
+  storeName: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  discountPercent: number;
+  startsAt: string;
+  endsAt: string;
+  status: string;
+  featured: boolean;
+  createdAt: string;
+}
+
+export interface CreatePromoDealRequest {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  title: string;
+  /** @maxLength 1000 */
+  description?: string;
+  imageUrl?: string;
+  /**
+     * @minimum 1
+     * @maximum 95
+     */
+  discountPercent: number;
+  startsAt: string;
+  endsAt: string;
+}
+
+export interface UpdatePromoDealRequest {
+  title?: string;
+  description?: string;
+  imageUrl?: string;
+  /**
+     * @minimum 1
+     * @maximum 95
+     */
+  discountPercent?: number;
+  startsAt?: string;
+  endsAt?: string;
+}
+
+export type DealModerationRequestStatus = typeof DealModerationRequestStatus[keyof typeof DealModerationRequestStatus];
+
+
+export const DealModerationRequestStatus = {
+  approved: 'approved',
+  rejected: 'rejected',
+  removed: 'removed',
+} as const;
+
+export interface DealModerationRequest {
+  status?: DealModerationRequestStatus;
+  featured?: boolean;
+}
+
+export type ModerationRequestStatus = typeof ModerationRequestStatus[keyof typeof ModerationRequestStatus];
+
+
+export const ModerationRequestStatus = {
+  approved: 'approved',
+  rejected: 'rejected',
+  archived: 'archived',
+} as const;
+
+export interface ModerationRequest {
+  status: ModerationRequestStatus;
+}
+
+export interface GroupBuyCampaign {
+  id: string;
+  /** @nullable */
+  storeId: string | null;
+  approvalStatus: string;
+  title: string;
+  image: string;
+  category: string;
+  originalPrice: number;
+  groupPrice: number;
+  cashbackPercent: number;
+  depositPercent: number;
+  minParticipants: number;
+  joinedCount: number;
+  depositCollected: number;
+  endsAt: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface CreateGroupBuyCampaignRequest {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  title: string;
+  image?: string;
+  /** @minLength 1 */
+  category: string;
+  /** @minimum 1 */
+  originalPrice: number;
+  /** @minimum 1 */
+  groupPrice: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  cashbackPercent: number;
+  /**
+     * @minimum 5
+     * @maximum 100
+     */
+  depositPercent: number;
+  /** @minimum 2 */
+  minParticipants: number;
+  endsAt: string;
+}
+
+export interface AdminMe {
+  isAdmin: boolean;
+  canClaim: boolean;
+}
+
+export interface AdminMerchant {
+  id: string;
+  ownerId: string;
+  name: string;
+  slug: string;
+  status: string;
+  productCount: number;
+  createdAt: string;
+}
+
+export type UpdateMerchantStatusRequestStatus = typeof UpdateMerchantStatusRequestStatus[keyof typeof UpdateMerchantStatusRequestStatus];
+
+
+export const UpdateMerchantStatusRequestStatus = {
+  active: 'active',
+  suspended: 'suspended',
+} as const;
+
+export interface UpdateMerchantStatusRequest {
+  status: UpdateMerchantStatusRequestStatus;
+}
+
+export interface GiftCardView {
+  id: string;
+  brandId: string;
+  faceValue: number;
+  price: number;
+  stock: number;
+  active: boolean;
+}
+
+export interface GiftCardBrandView {
+  id: string;
+  name: string;
+  logoUrl: string;
+  description: string;
+  active: boolean;
+  cards: GiftCardView[];
+}
+
+export interface CreateGiftCardBrandRequest {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name: string;
+  logoUrl?: string;
+  /** @maxLength 500 */
+  description?: string;
+}
+
+export interface UpdateGiftCardBrandRequest {
+  name?: string;
+  logoUrl?: string;
+  description?: string;
+  active?: boolean;
+}
+
+export interface CreateGiftCardRequest {
+  brandId: string;
+  /** @minimum 1 */
+  faceValue: number;
+  /** @minimum 1 */
+  price: number;
+  /** @minimum 0 */
+  stock: number;
+}
+
+export interface UpdateGiftCardRequest {
+  /** @minimum 1 */
+  price?: number;
+  /** @minimum 0 */
+  stock?: number;
+  active?: boolean;
+}
+
+export type PurchaseGiftCardRequestPaymentMethod = typeof PurchaseGiftCardRequestPaymentMethod[keyof typeof PurchaseGiftCardRequestPaymentMethod];
+
+
+export const PurchaseGiftCardRequestPaymentMethod = {
+  bkash: 'bkash',
+  nagad: 'nagad',
+  card: 'card',
+} as const;
+
+export interface PurchaseGiftCardRequest {
+  paymentMethod: PurchaseGiftCardRequestPaymentMethod;
+}
+
+export interface GiftCardPurchase {
+  id: string;
+  cardId: string;
+  brandName: string;
+  faceValue: number;
+  pricePaid: number;
+  paymentMethod: string;
+  paymentRef: string;
+  cardCode: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface FeeRule {
+  id: string;
+  categoryId: string;
+  categoryName: string;
+  feePercent: number;
+  customerSharePercent: number;
+  returnPeriodDays: number;
+  active: boolean;
+}
+
+export interface CreateFeeRuleRequest {
+  categoryId: string;
+  /**
+     * @minimum 0
+     * @maximum 50
+     */
+  feePercent: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  customerSharePercent?: number;
+  /**
+     * @minimum 0
+     * @maximum 60
+     */
+  returnPeriodDays?: number;
+}
+
+export interface UpdateFeeRuleRequest {
+  /**
+     * @minimum 0
+     * @maximum 50
+     */
+  feePercent?: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  customerSharePercent?: number;
+  /**
+     * @minimum 0
+     * @maximum 60
+     */
+  returnPeriodDays?: number;
+  active?: boolean;
+}
+
 export interface MerchantSummary {
   store: MerchantStore | null;
   productCount: number;
@@ -213,5 +579,9 @@ search?: string;
  * @maximum 50
  */
 limit?: number;
+};
+
+export type ListPromoDealsParams = {
+featured?: boolean;
 };
 

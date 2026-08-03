@@ -381,3 +381,937 @@ export const ListMerchantOrdersResponseItem = zod.object({
 export const ListMerchantOrdersResponse = zod.array(ListMerchantOrdersResponseItem)
 
 
+/**
+ * @summary List approved, currently valid coupons
+ */
+export const ListPublicCouponsResponseItem = zod.object({
+  "id": zod.string(),
+  "scope": zod.string(),
+  "storeId": zod.string().nullable(),
+  "storeName": zod.string().nullable(),
+  "code": zod.string(),
+  "title": zod.string(),
+  "discountType": zod.string(),
+  "discountValue": zod.number(),
+  "minOrderValue": zod.number(),
+  "maxUses": zod.number(),
+  "usedCount": zod.number(),
+  "categoryId": zod.string().nullable(),
+  "startsAt": zod.string(),
+  "endsAt": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListPublicCouponsResponse = zod.array(ListPublicCouponsResponseItem)
+
+
+/**
+ * @summary Validate a coupon against an order subtotal (checkout integration point)
+ */
+export const validateCouponBodySubtotalMin = 0;
+
+
+
+export const ValidateCouponBody = zod.object({
+  "code": zod.string(),
+  "subtotal": zod.number().min(validateCouponBodySubtotalMin),
+  "categoryId": zod.string().optional(),
+  "storeId": zod.string().optional()
+})
+
+export const ValidateCouponResponse = zod.object({
+  "valid": zod.boolean(),
+  "discountAmount": zod.number(),
+  "reason": zod.string().nullable(),
+  "coupon": zod.union([zod.object({
+  "id": zod.string(),
+  "scope": zod.string(),
+  "storeId": zod.string().nullable(),
+  "storeName": zod.string().nullable(),
+  "code": zod.string(),
+  "title": zod.string(),
+  "discountType": zod.string(),
+  "discountValue": zod.number(),
+  "minOrderValue": zod.number(),
+  "maxUses": zod.number(),
+  "usedCount": zod.number(),
+  "categoryId": zod.string().nullable(),
+  "startsAt": zod.string(),
+  "endsAt": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.string()
+}),zod.null()])
+})
+
+
+/**
+ * @summary List approved promotional deals in their campaign window
+ */
+export const ListPromoDealsQueryParams = zod.object({
+  "featured": zod.coerce.boolean().optional()
+})
+
+export const ListPromoDealsResponseItem = zod.object({
+  "id": zod.string(),
+  "storeId": zod.string(),
+  "storeName": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "imageUrl": zod.string(),
+  "discountPercent": zod.number(),
+  "startsAt": zod.string(),
+  "endsAt": zod.string(),
+  "status": zod.string(),
+  "featured": zod.boolean(),
+  "createdAt": zod.string()
+})
+export const ListPromoDealsResponse = zod.array(ListPromoDealsResponseItem)
+
+
+/**
+ * @summary List active gift card brands with available cards
+ */
+export const ListGiftCardBrandsResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "logoUrl": zod.string(),
+  "description": zod.string(),
+  "active": zod.boolean(),
+  "cards": zod.array(zod.object({
+  "id": zod.string(),
+  "brandId": zod.string(),
+  "faceValue": zod.number(),
+  "price": zod.number(),
+  "stock": zod.number(),
+  "active": zod.boolean()
+}))
+})
+export const ListGiftCardBrandsResponse = zod.array(ListGiftCardBrandsResponseItem)
+
+
+/**
+ * @summary Purchase a discounted gift card (delivered digitally)
+ */
+export const PurchaseGiftCardParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const PurchaseGiftCardBody = zod.object({
+  "paymentMethod": zod.enum(['bkash', 'nagad', 'card'])
+})
+
+export const PurchaseGiftCardResponse = zod.object({
+  "id": zod.string(),
+  "cardId": zod.string(),
+  "brandName": zod.string(),
+  "faceValue": zod.number(),
+  "pricePaid": zod.number(),
+  "paymentMethod": zod.string(),
+  "paymentRef": zod.string(),
+  "cardCode": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary List the signed-in customer's purchased gift cards
+ */
+export const ListMyGiftCardOrdersResponseItem = zod.object({
+  "id": zod.string(),
+  "cardId": zod.string(),
+  "brandName": zod.string(),
+  "faceValue": zod.number(),
+  "pricePaid": zod.number(),
+  "paymentMethod": zod.string(),
+  "paymentRef": zod.string(),
+  "cardCode": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListMyGiftCardOrdersResponse = zod.array(ListMyGiftCardOrdersResponseItem)
+
+
+/**
+ * @summary List coupons for the signed-in merchant store
+ */
+export const ListMerchantCouponsResponseItem = zod.object({
+  "id": zod.string(),
+  "scope": zod.string(),
+  "storeId": zod.string().nullable(),
+  "storeName": zod.string().nullable(),
+  "code": zod.string(),
+  "title": zod.string(),
+  "discountType": zod.string(),
+  "discountValue": zod.number(),
+  "minOrderValue": zod.number(),
+  "maxUses": zod.number(),
+  "usedCount": zod.number(),
+  "categoryId": zod.string().nullable(),
+  "startsAt": zod.string(),
+  "endsAt": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListMerchantCouponsResponse = zod.array(ListMerchantCouponsResponseItem)
+
+
+/**
+ * @summary Create a store coupon (pending admin approval)
+ */
+export const createMerchantCouponBodyCodeMin = 3;
+export const createMerchantCouponBodyCodeMax = 30;
+
+export const createMerchantCouponBodyTitleMax = 120;
+
+export const createMerchantCouponBodyDiscountValueMin = 0;
+
+export const createMerchantCouponBodyMinOrderValueMin = 0;
+
+export const createMerchantCouponBodyMaxUsesMin = 0;
+
+
+
+export const CreateMerchantCouponBody = zod.object({
+  "code": zod.string().min(createMerchantCouponBodyCodeMin).max(createMerchantCouponBodyCodeMax),
+  "title": zod.string().min(1).max(createMerchantCouponBodyTitleMax),
+  "discountType": zod.enum(['percent', 'fixed']),
+  "discountValue": zod.number().min(createMerchantCouponBodyDiscountValueMin),
+  "minOrderValue": zod.number().min(createMerchantCouponBodyMinOrderValueMin).optional(),
+  "maxUses": zod.number().min(createMerchantCouponBodyMaxUsesMin).optional(),
+  "categoryId": zod.string().optional(),
+  "startsAt": zod.string(),
+  "endsAt": zod.string()
+})
+
+export const CreateMerchantCouponResponse = zod.object({
+  "id": zod.string(),
+  "scope": zod.string(),
+  "storeId": zod.string().nullable(),
+  "storeName": zod.string().nullable(),
+  "code": zod.string(),
+  "title": zod.string(),
+  "discountType": zod.string(),
+  "discountValue": zod.number(),
+  "minOrderValue": zod.number(),
+  "maxUses": zod.number(),
+  "usedCount": zod.number(),
+  "categoryId": zod.string().nullable(),
+  "startsAt": zod.string(),
+  "endsAt": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Update or archive a store coupon
+ */
+export const UpdateMerchantCouponParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateMerchantCouponBodyDiscountValueMin = 0;
+
+export const updateMerchantCouponBodyMinOrderValueMin = 0;
+
+export const updateMerchantCouponBodyMaxUsesMin = 0;
+
+
+
+export const UpdateMerchantCouponBody = zod.object({
+  "title": zod.string().optional(),
+  "discountValue": zod.number().min(updateMerchantCouponBodyDiscountValueMin).optional(),
+  "minOrderValue": zod.number().min(updateMerchantCouponBodyMinOrderValueMin).optional(),
+  "maxUses": zod.number().min(updateMerchantCouponBodyMaxUsesMin).optional(),
+  "startsAt": zod.string().optional(),
+  "endsAt": zod.string().optional(),
+  "status": zod.enum(['pending', 'archived']).optional()
+})
+
+export const UpdateMerchantCouponResponse = zod.object({
+  "id": zod.string(),
+  "scope": zod.string(),
+  "storeId": zod.string().nullable(),
+  "storeName": zod.string().nullable(),
+  "code": zod.string(),
+  "title": zod.string(),
+  "discountType": zod.string(),
+  "discountValue": zod.number(),
+  "minOrderValue": zod.number(),
+  "maxUses": zod.number(),
+  "usedCount": zod.number(),
+  "categoryId": zod.string().nullable(),
+  "startsAt": zod.string(),
+  "endsAt": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary List promotional deals for the signed-in merchant store
+ */
+export const ListMerchantDealsResponseItem = zod.object({
+  "id": zod.string(),
+  "storeId": zod.string(),
+  "storeName": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "imageUrl": zod.string(),
+  "discountPercent": zod.number(),
+  "startsAt": zod.string(),
+  "endsAt": zod.string(),
+  "status": zod.string(),
+  "featured": zod.boolean(),
+  "createdAt": zod.string()
+})
+export const ListMerchantDealsResponse = zod.array(ListMerchantDealsResponseItem)
+
+
+/**
+ * @summary Create a promotional deal (pending admin approval)
+ */
+export const createMerchantDealBodyTitleMax = 160;
+
+export const createMerchantDealBodyDescriptionMax = 1000;
+
+export const createMerchantDealBodyDiscountPercentMax = 95;
+
+
+
+export const CreateMerchantDealBody = zod.object({
+  "title": zod.string().min(1).max(createMerchantDealBodyTitleMax),
+  "description": zod.string().max(createMerchantDealBodyDescriptionMax).optional(),
+  "imageUrl": zod.string().optional(),
+  "discountPercent": zod.number().min(1).max(createMerchantDealBodyDiscountPercentMax),
+  "startsAt": zod.string(),
+  "endsAt": zod.string()
+})
+
+export const CreateMerchantDealResponse = zod.object({
+  "id": zod.string(),
+  "storeId": zod.string(),
+  "storeName": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "imageUrl": zod.string(),
+  "discountPercent": zod.number(),
+  "startsAt": zod.string(),
+  "endsAt": zod.string(),
+  "status": zod.string(),
+  "featured": zod.boolean(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Update a promotional deal owned by the signed-in merchant
+ */
+export const UpdateMerchantDealParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateMerchantDealBodyDiscountPercentMax = 95;
+
+
+
+export const UpdateMerchantDealBody = zod.object({
+  "title": zod.string().optional(),
+  "description": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "discountPercent": zod.number().min(1).max(updateMerchantDealBodyDiscountPercentMax).optional(),
+  "startsAt": zod.string().optional(),
+  "endsAt": zod.string().optional()
+})
+
+export const UpdateMerchantDealResponse = zod.object({
+  "id": zod.string(),
+  "storeId": zod.string(),
+  "storeName": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "imageUrl": zod.string(),
+  "discountPercent": zod.number(),
+  "startsAt": zod.string(),
+  "endsAt": zod.string(),
+  "status": zod.string(),
+  "featured": zod.boolean(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary List group buy campaigns for the signed-in merchant store
+ */
+export const ListMerchantGroupBuysResponseItem = zod.object({
+  "id": zod.string(),
+  "storeId": zod.string().nullable(),
+  "approvalStatus": zod.string(),
+  "title": zod.string(),
+  "image": zod.string(),
+  "category": zod.string(),
+  "originalPrice": zod.number(),
+  "groupPrice": zod.number(),
+  "cashbackPercent": zod.number(),
+  "depositPercent": zod.number(),
+  "minParticipants": zod.number(),
+  "joinedCount": zod.number(),
+  "depositCollected": zod.number(),
+  "endsAt": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListMerchantGroupBuysResponse = zod.array(ListMerchantGroupBuysResponseItem)
+
+
+/**
+ * @summary Create a group buy campaign (pending admin approval)
+ */
+export const createMerchantGroupBuyBodyTitleMax = 160;
+
+
+
+
+export const createMerchantGroupBuyBodyCashbackPercentMin = 0;
+export const createMerchantGroupBuyBodyCashbackPercentMax = 100;
+
+export const createMerchantGroupBuyBodyDepositPercentMin = 5;
+export const createMerchantGroupBuyBodyDepositPercentMax = 100;
+
+export const createMerchantGroupBuyBodyMinParticipantsMin = 2;
+
+
+
+export const CreateMerchantGroupBuyBody = zod.object({
+  "title": zod.string().min(1).max(createMerchantGroupBuyBodyTitleMax),
+  "image": zod.string().optional(),
+  "category": zod.string().min(1),
+  "originalPrice": zod.number().min(1),
+  "groupPrice": zod.number().min(1),
+  "cashbackPercent": zod.number().min(createMerchantGroupBuyBodyCashbackPercentMin).max(createMerchantGroupBuyBodyCashbackPercentMax),
+  "depositPercent": zod.number().min(createMerchantGroupBuyBodyDepositPercentMin).max(createMerchantGroupBuyBodyDepositPercentMax),
+  "minParticipants": zod.number().min(createMerchantGroupBuyBodyMinParticipantsMin),
+  "endsAt": zod.string()
+})
+
+export const CreateMerchantGroupBuyResponse = zod.object({
+  "id": zod.string(),
+  "storeId": zod.string().nullable(),
+  "approvalStatus": zod.string(),
+  "title": zod.string(),
+  "image": zod.string(),
+  "category": zod.string(),
+  "originalPrice": zod.number(),
+  "groupPrice": zod.number(),
+  "cashbackPercent": zod.number(),
+  "depositPercent": zod.number(),
+  "minParticipants": zod.number(),
+  "joinedCount": zod.number(),
+  "depositCollected": zod.number(),
+  "endsAt": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Check whether the signed-in user is a platform admin
+ */
+export const GetAdminMeResponse = zod.object({
+  "isAdmin": zod.boolean(),
+  "canClaim": zod.boolean()
+})
+
+
+/**
+ * @summary Claim the first platform admin seat (only when no admin exists)
+ */
+export const ClaimAdminResponse = zod.object({
+  "isAdmin": zod.boolean(),
+  "canClaim": zod.boolean()
+})
+
+
+/**
+ * @summary List merchant stores for approval and management
+ */
+export const ListAdminMerchantsResponseItem = zod.object({
+  "id": zod.string(),
+  "ownerId": zod.string(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "status": zod.string(),
+  "productCount": zod.number(),
+  "createdAt": zod.string()
+})
+export const ListAdminMerchantsResponse = zod.array(ListAdminMerchantsResponseItem)
+
+
+/**
+ * @summary Approve or suspend a merchant store
+ */
+export const UpdateAdminMerchantParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateAdminMerchantBody = zod.object({
+  "status": zod.enum(['active', 'suspended'])
+})
+
+export const UpdateAdminMerchantResponse = zod.object({
+  "id": zod.string(),
+  "ownerId": zod.string(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "status": zod.string(),
+  "productCount": zod.number(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary List all coupons including pending merchant coupons
+ */
+export const ListAdminCouponsResponseItem = zod.object({
+  "id": zod.string(),
+  "scope": zod.string(),
+  "storeId": zod.string().nullable(),
+  "storeName": zod.string().nullable(),
+  "code": zod.string(),
+  "title": zod.string(),
+  "discountType": zod.string(),
+  "discountValue": zod.number(),
+  "minOrderValue": zod.number(),
+  "maxUses": zod.number(),
+  "usedCount": zod.number(),
+  "categoryId": zod.string().nullable(),
+  "startsAt": zod.string(),
+  "endsAt": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListAdminCouponsResponse = zod.array(ListAdminCouponsResponseItem)
+
+
+/**
+ * @summary Create a global coupon (auto-approved)
+ */
+export const createAdminCouponBodyCodeMin = 3;
+export const createAdminCouponBodyCodeMax = 30;
+
+export const createAdminCouponBodyTitleMax = 120;
+
+export const createAdminCouponBodyDiscountValueMin = 0;
+
+export const createAdminCouponBodyMinOrderValueMin = 0;
+
+export const createAdminCouponBodyMaxUsesMin = 0;
+
+
+
+export const CreateAdminCouponBody = zod.object({
+  "code": zod.string().min(createAdminCouponBodyCodeMin).max(createAdminCouponBodyCodeMax),
+  "title": zod.string().min(1).max(createAdminCouponBodyTitleMax),
+  "discountType": zod.enum(['percent', 'fixed']),
+  "discountValue": zod.number().min(createAdminCouponBodyDiscountValueMin),
+  "minOrderValue": zod.number().min(createAdminCouponBodyMinOrderValueMin).optional(),
+  "maxUses": zod.number().min(createAdminCouponBodyMaxUsesMin).optional(),
+  "categoryId": zod.string().optional(),
+  "startsAt": zod.string(),
+  "endsAt": zod.string()
+})
+
+export const CreateAdminCouponResponse = zod.object({
+  "id": zod.string(),
+  "scope": zod.string(),
+  "storeId": zod.string().nullable(),
+  "storeName": zod.string().nullable(),
+  "code": zod.string(),
+  "title": zod.string(),
+  "discountType": zod.string(),
+  "discountValue": zod.number(),
+  "minOrderValue": zod.number(),
+  "maxUses": zod.number(),
+  "usedCount": zod.number(),
+  "categoryId": zod.string().nullable(),
+  "startsAt": zod.string(),
+  "endsAt": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Approve, reject, or archive any coupon
+ */
+export const ModerateAdminCouponParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ModerateAdminCouponBody = zod.object({
+  "status": zod.enum(['approved', 'rejected', 'archived'])
+})
+
+export const ModerateAdminCouponResponse = zod.object({
+  "id": zod.string(),
+  "scope": zod.string(),
+  "storeId": zod.string().nullable(),
+  "storeName": zod.string().nullable(),
+  "code": zod.string(),
+  "title": zod.string(),
+  "discountType": zod.string(),
+  "discountValue": zod.number(),
+  "minOrderValue": zod.number(),
+  "maxUses": zod.number(),
+  "usedCount": zod.number(),
+  "categoryId": zod.string().nullable(),
+  "startsAt": zod.string(),
+  "endsAt": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary List all promotional deals including pending ones
+ */
+export const ListAdminDealsResponseItem = zod.object({
+  "id": zod.string(),
+  "storeId": zod.string(),
+  "storeName": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "imageUrl": zod.string(),
+  "discountPercent": zod.number(),
+  "startsAt": zod.string(),
+  "endsAt": zod.string(),
+  "status": zod.string(),
+  "featured": zod.boolean(),
+  "createdAt": zod.string()
+})
+export const ListAdminDealsResponse = zod.array(ListAdminDealsResponseItem)
+
+
+/**
+ * @summary Approve, reject, remove, or feature a promotional deal
+ */
+export const ModerateAdminDealParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ModerateAdminDealBody = zod.object({
+  "status": zod.enum(['approved', 'rejected', 'removed']).optional(),
+  "featured": zod.boolean().optional()
+})
+
+export const ModerateAdminDealResponse = zod.object({
+  "id": zod.string(),
+  "storeId": zod.string(),
+  "storeName": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "imageUrl": zod.string(),
+  "discountPercent": zod.number(),
+  "startsAt": zod.string(),
+  "endsAt": zod.string(),
+  "status": zod.string(),
+  "featured": zod.boolean(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary List all group buy campaigns including pending ones
+ */
+export const ListAdminGroupBuysResponseItem = zod.object({
+  "id": zod.string(),
+  "storeId": zod.string().nullable(),
+  "approvalStatus": zod.string(),
+  "title": zod.string(),
+  "image": zod.string(),
+  "category": zod.string(),
+  "originalPrice": zod.number(),
+  "groupPrice": zod.number(),
+  "cashbackPercent": zod.number(),
+  "depositPercent": zod.number(),
+  "minParticipants": zod.number(),
+  "joinedCount": zod.number(),
+  "depositCollected": zod.number(),
+  "endsAt": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListAdminGroupBuysResponse = zod.array(ListAdminGroupBuysResponseItem)
+
+
+/**
+ * @summary Approve or reject a group buy campaign
+ */
+export const ModerateAdminGroupBuyParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ModerateAdminGroupBuyBody = zod.object({
+  "status": zod.enum(['approved', 'rejected', 'archived'])
+})
+
+export const ModerateAdminGroupBuyResponse = zod.object({
+  "id": zod.string(),
+  "storeId": zod.string().nullable(),
+  "approvalStatus": zod.string(),
+  "title": zod.string(),
+  "image": zod.string(),
+  "category": zod.string(),
+  "originalPrice": zod.number(),
+  "groupPrice": zod.number(),
+  "cashbackPercent": zod.number(),
+  "depositPercent": zod.number(),
+  "minParticipants": zod.number(),
+  "joinedCount": zod.number(),
+  "depositCollected": zod.number(),
+  "endsAt": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary List all gift card brands including inactive ones
+ */
+export const ListAdminGiftCardBrandsResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "logoUrl": zod.string(),
+  "description": zod.string(),
+  "active": zod.boolean(),
+  "cards": zod.array(zod.object({
+  "id": zod.string(),
+  "brandId": zod.string(),
+  "faceValue": zod.number(),
+  "price": zod.number(),
+  "stock": zod.number(),
+  "active": zod.boolean()
+}))
+})
+export const ListAdminGiftCardBrandsResponse = zod.array(ListAdminGiftCardBrandsResponseItem)
+
+
+/**
+ * @summary Create a gift card brand
+ */
+export const createAdminGiftCardBrandBodyNameMax = 120;
+
+export const createAdminGiftCardBrandBodyDescriptionMax = 500;
+
+
+
+export const CreateAdminGiftCardBrandBody = zod.object({
+  "name": zod.string().min(1).max(createAdminGiftCardBrandBodyNameMax),
+  "logoUrl": zod.string().optional(),
+  "description": zod.string().max(createAdminGiftCardBrandBodyDescriptionMax).optional()
+})
+
+export const CreateAdminGiftCardBrandResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "logoUrl": zod.string(),
+  "description": zod.string(),
+  "active": zod.boolean(),
+  "cards": zod.array(zod.object({
+  "id": zod.string(),
+  "brandId": zod.string(),
+  "faceValue": zod.number(),
+  "price": zod.number(),
+  "stock": zod.number(),
+  "active": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Update a gift card brand
+ */
+export const UpdateAdminGiftCardBrandParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateAdminGiftCardBrandBody = zod.object({
+  "name": zod.string().optional(),
+  "logoUrl": zod.string().optional(),
+  "description": zod.string().optional(),
+  "active": zod.boolean().optional()
+})
+
+export const UpdateAdminGiftCardBrandResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "logoUrl": zod.string(),
+  "description": zod.string(),
+  "active": zod.boolean(),
+  "cards": zod.array(zod.object({
+  "id": zod.string(),
+  "brandId": zod.string(),
+  "faceValue": zod.number(),
+  "price": zod.number(),
+  "stock": zod.number(),
+  "active": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Add a gift card denomination to a brand
+ */
+
+
+export const createAdminGiftCardBodyStockMin = 0;
+
+
+
+export const CreateAdminGiftCardBody = zod.object({
+  "brandId": zod.string(),
+  "faceValue": zod.number().min(1),
+  "price": zod.number().min(1),
+  "stock": zod.number().min(createAdminGiftCardBodyStockMin)
+})
+
+export const CreateAdminGiftCardResponse = zod.object({
+  "id": zod.string(),
+  "brandId": zod.string(),
+  "faceValue": zod.number(),
+  "price": zod.number(),
+  "stock": zod.number(),
+  "active": zod.boolean()
+})
+
+
+/**
+ * @summary Update a gift card's price, stock, or availability
+ */
+export const UpdateAdminGiftCardParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+export const updateAdminGiftCardBodyStockMin = 0;
+
+
+
+export const UpdateAdminGiftCardBody = zod.object({
+  "price": zod.number().min(1).optional(),
+  "stock": zod.number().min(updateAdminGiftCardBodyStockMin).optional(),
+  "active": zod.boolean().optional()
+})
+
+export const UpdateAdminGiftCardResponse = zod.object({
+  "id": zod.string(),
+  "brandId": zod.string(),
+  "faceValue": zod.number(),
+  "price": zod.number(),
+  "stock": zod.number(),
+  "active": zod.boolean()
+})
+
+
+/**
+ * @summary List gift card delivery records
+ */
+export const ListAdminGiftCardOrdersResponseItem = zod.object({
+  "id": zod.string(),
+  "cardId": zod.string(),
+  "brandName": zod.string(),
+  "faceValue": zod.number(),
+  "pricePaid": zod.number(),
+  "paymentMethod": zod.string(),
+  "paymentRef": zod.string(),
+  "cardCode": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListAdminGiftCardOrdersResponse = zod.array(ListAdminGiftCardOrdersResponseItem)
+
+
+/**
+ * @summary List category-wise Success Fee rules
+ */
+export const ListAdminFeeRulesResponseItem = zod.object({
+  "id": zod.string(),
+  "categoryId": zod.string(),
+  "categoryName": zod.string(),
+  "feePercent": zod.number(),
+  "customerSharePercent": zod.number(),
+  "returnPeriodDays": zod.number(),
+  "active": zod.boolean()
+})
+export const ListAdminFeeRulesResponse = zod.array(ListAdminFeeRulesResponseItem)
+
+
+/**
+ * @summary Create a Success Fee rule for a category
+ */
+export const createAdminFeeRuleBodyFeePercentMin = 0;
+export const createAdminFeeRuleBodyFeePercentMax = 50;
+
+export const createAdminFeeRuleBodyCustomerSharePercentMin = 0;
+export const createAdminFeeRuleBodyCustomerSharePercentMax = 100;
+
+export const createAdminFeeRuleBodyReturnPeriodDaysMin = 0;
+export const createAdminFeeRuleBodyReturnPeriodDaysMax = 60;
+
+
+
+export const CreateAdminFeeRuleBody = zod.object({
+  "categoryId": zod.string(),
+  "feePercent": zod.number().min(createAdminFeeRuleBodyFeePercentMin).max(createAdminFeeRuleBodyFeePercentMax),
+  "customerSharePercent": zod.number().min(createAdminFeeRuleBodyCustomerSharePercentMin).max(createAdminFeeRuleBodyCustomerSharePercentMax).optional(),
+  "returnPeriodDays": zod.number().min(createAdminFeeRuleBodyReturnPeriodDaysMin).max(createAdminFeeRuleBodyReturnPeriodDaysMax).optional()
+})
+
+export const CreateAdminFeeRuleResponse = zod.object({
+  "id": zod.string(),
+  "categoryId": zod.string(),
+  "categoryName": zod.string(),
+  "feePercent": zod.number(),
+  "customerSharePercent": zod.number(),
+  "returnPeriodDays": zod.number(),
+  "active": zod.boolean()
+})
+
+
+/**
+ * @summary Update a Success Fee rule
+ */
+export const UpdateAdminFeeRuleParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateAdminFeeRuleBodyFeePercentMin = 0;
+export const updateAdminFeeRuleBodyFeePercentMax = 50;
+
+export const updateAdminFeeRuleBodyCustomerSharePercentMin = 0;
+export const updateAdminFeeRuleBodyCustomerSharePercentMax = 100;
+
+export const updateAdminFeeRuleBodyReturnPeriodDaysMin = 0;
+export const updateAdminFeeRuleBodyReturnPeriodDaysMax = 60;
+
+
+
+export const UpdateAdminFeeRuleBody = zod.object({
+  "feePercent": zod.number().min(updateAdminFeeRuleBodyFeePercentMin).max(updateAdminFeeRuleBodyFeePercentMax).optional(),
+  "customerSharePercent": zod.number().min(updateAdminFeeRuleBodyCustomerSharePercentMin).max(updateAdminFeeRuleBodyCustomerSharePercentMax).optional(),
+  "returnPeriodDays": zod.number().min(updateAdminFeeRuleBodyReturnPeriodDaysMin).max(updateAdminFeeRuleBodyReturnPeriodDaysMax).optional(),
+  "active": zod.boolean().optional()
+})
+
+export const UpdateAdminFeeRuleResponse = zod.object({
+  "id": zod.string(),
+  "categoryId": zod.string(),
+  "categoryName": zod.string(),
+  "feePercent": zod.number(),
+  "customerSharePercent": zod.number(),
+  "returnPeriodDays": zod.number(),
+  "active": zod.boolean()
+})
+
+
