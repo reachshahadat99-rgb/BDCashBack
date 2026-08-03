@@ -2,11 +2,62 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useGetMarketplaceSummary } from "@workspace/api-client-react";
 import { useAuth } from "@clerk/react";
 import { Link } from "wouter";
-import { ChevronRight, Percent, Clock, Sparkles, Wallet as WalletIcon, TrendingUp } from "lucide-react";
+import { ChevronRight, Clock, Sparkles, Wallet as WalletIcon, TrendingUp, ShoppingBag, Flame, Percent, Ticket, Users, Gift } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
+
+const FEATURES = [
+  {
+    href: "/products",
+    icon: ShoppingBag,
+    label: "Shop",
+    desc: "All stores",
+    color: "bg-teal-50 text-teal-700 border-teal-200",
+    iconBg: "bg-teal-100",
+  },
+  {
+    href: "/deals",
+    icon: Flame,
+    label: "Deals",
+    desc: "Limited time",
+    color: "bg-red-50 text-red-700 border-red-200",
+    iconBg: "bg-red-100",
+  },
+  {
+    href: "/cashback",
+    icon: Percent,
+    label: "Cashback",
+    desc: "Earn back",
+    color: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    iconBg: "bg-emerald-100",
+  },
+  {
+    href: "/coupons",
+    icon: Ticket,
+    label: "Coupons",
+    desc: "Promo codes",
+    color: "bg-violet-50 text-violet-700 border-violet-200",
+    iconBg: "bg-violet-100",
+  },
+  {
+    href: "/group-buy",
+    icon: Users,
+    label: "Group Buy",
+    desc: "Buy together",
+    color: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    iconBg: "bg-indigo-100",
+  },
+  {
+    href: "/gift-cards",
+    icon: Gift,
+    label: "Gift Cards",
+    desc: "Send a gift",
+    color: "bg-pink-50 text-pink-700 border-pink-200",
+    iconBg: "bg-pink-100",
+  },
+];
 
 const dealAccents: Record<string, string> = {
   violet: "linear-gradient(135deg, #d946ef, #a855f7)",
@@ -115,6 +166,25 @@ export default function Home() {
         {/* Decorative elements */}
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-teal-500/30 rounded-full blur-2xl pointer-events-none" />
+      </section>
+
+      {/* Feature shortcuts */}
+      <section>
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+          {FEATURES.map((f) => (
+            <Link key={f.href} href={f.href} className="group">
+              <div className={`flex flex-col items-center gap-2 p-3 md:p-4 rounded-2xl border transition-all hover:shadow-md hover:-translate-y-0.5 ${f.color}`}>
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${f.iconBg} group-hover:scale-110 transition-transform`}>
+                  <f.icon className="w-5 h-5" />
+                </div>
+                <div className="text-center">
+                  <div className="text-sm font-bold leading-tight">{f.label}</div>
+                  <div className="text-[10px] opacity-70 mt-0.5 hidden md:block">{f.desc}</div>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
       </section>
 
       {/* Categories */}

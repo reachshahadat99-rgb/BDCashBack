@@ -1,66 +1,142 @@
 import { Link, useLocation } from "wouter";
 import { useClerk, useUser } from "@clerk/react";
-import { Home, Search, Wallet, User, Bell, Store } from "lucide-react";
+import { Home, Search, Wallet, User, Bell, Store, Ticket, Flame, Percent, Users, Gift, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useState, useRef, useEffect } from "react";
+
+const primaryNav = [
+  { href: "/", label: "Home" },
+  { href: "/products", label: "Shop" },
+  { href: "/deals", label: "Deals" },
+  { href: "/cashback", label: "Cashback" },
+];
+
+const moreNav = [
+  { href: "/coupons", icon: Ticket, label: "Coupons" },
+  { href: "/group-buy", icon: Users, label: "Group Buy" },
+  { href: "/gift-cards", icon: Gift, label: "Gift Cards" },
+  { href: "/merchant", icon: Store, label: "Sell on BDCashBack" },
+];
+
+const mobileBottomNav = [
+  { href: "/", icon: Home, label: "Home" },
+  { href: "/products", icon: Search, label: "Shop" },
+  { href: "/deals", icon: Flame, label: "Deals" },
+  { href: "/coupons", icon: Ticket, label: "Coupons" },
+  { href: "/wallet", icon: Wallet, label: "Wallet" },
+];
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, isLoaded } = useUser();
   const { signOut } = useClerk();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
 
-  const navItems = [
-    { href: "/", icon: Home, label: "Home" },
-    { href: "/products", icon: Search, label: "Discover" },
-    { href: "/wallet", icon: Wallet, label: "Wallet" },
-    { href: "/merchant", icon: Store, label: "Sell" },
-    { href: "/profile", icon: User, label: "Profile" },
-  ];
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+        setMoreOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, []);
+
+  // Close dropdown on navigation
+  useEffect(() => { setMoreOpen(false); }, [location]);
 
   return (
     <div className="min-h-[100dvh] w-full flex flex-col bg-background">
       {/* Desktop Top Navbar */}
       <header className="sticky top-0 z-50 w-full glass-panel border-b border-border/50 hidden md:block">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-8">
+          <Link href="/" className="flex items-center gap-2 shrink-0">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <Wallet className="w-5 h-5 text-white" />
             </div>
             <span className="font-bold text-xl tracking-tight text-primary">BDCashBack</span>
           </Link>
 
-          <nav className="flex items-center gap-6">
-            {navItems.map((item) => (
+          <nav className="flex items-center gap-1">
+            {primaryNav.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "text-sm font-semibold transition-colors hover:text-primary",
-                  location === item.href ? "text-primary" : "text-muted-foreground"
+                  "px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors hover:text-primary hover:bg-accent",
+                  location === item.href ? "text-primary bg-accent" : "text-muted-foreground"
                 )}
               >
                 {item.label}
               </Link>
             ))}
+
+            {/* More dropdown */}
+            <div className="relative" ref={moreRef}>
+              <button
+                onClick={() => setMoreOpen((v) => !v)}
+                className={cn(
+                  "flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors hover:text-primary hover:bg-accent",
+                  moreOpen ? "text-primary bg-accent" : "text-muted-foreground"
+                )}
+              >
+                More <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", moreOpen && "rotate-180")} />
+              </button>
+              {moreOpen && (
+                <div className="absolute top-full left-0 mt-1.5 w-52 bg-background border border-border rounded-xl shadow-lg overflow-hidden z-50 py-1">
+                  {moreNav.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors hover:bg-accent hover:text-primary",
+                        location === item.href ? "text-primary bg-accent" : "text-foreground"
+                      )}
+                    >
+                      <item.icon className="w-4 h-4 shrink-0 text-muted-foreground" />
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <Link
+              href="/wallet"
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors hover:text-primary hover:bg-accent",
+                location === "/wallet" ? "text-primary bg-accent" : "text-muted-foreground"
+              )}
+            >
+              Wallet
+            </Link>
           </nav>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 shrink-0">
             <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-primary">
               <Bell className="w-5 h-5" />
             </Button>
             {isLoaded && user ? (
-              <button
-                type="button"
-                onClick={() => signOut({ redirectUrl: "/" })}
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
-              >
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs">
-                  {(user.firstName?.[0] ?? user.emailAddresses[0]?.emailAddress[0] ?? "U").toUpperCase()}
-                </span>
-                Sign out
-              </button>
+              <div className="flex items-center gap-2">
+                <Link href="/profile" className="inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-sm font-semibold hover:bg-accent transition-colors">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                    {(user.firstName?.[0] ?? user.emailAddresses[0]?.emailAddress[0] ?? "U").toUpperCase()}
+                  </span>
+                  {user.firstName ?? "Account"}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => signOut({ redirectUrl: "/" })}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Sign out
+                </button>
+              </div>
             ) : (
-              <Link href="/sign-in" className="inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-semibold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98] bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm h-9 px-4">
+              <Link href="/sign-in" className="inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-bold ring-offset-background transition-all bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm h-9 px-4">
                 Sign In
               </Link>
             )}
@@ -77,9 +153,16 @@ export function Shell({ children }: { children: React.ReactNode }) {
             </div>
             <span className="font-bold text-lg tracking-tight text-primary">BDCashBack</span>
           </Link>
-          <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground">
-            <Bell className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Link href="/profile">
+              <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground">
+                <User className="w-5 h-5" />
+              </Button>
+            </Link>
+            <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground">
+              <Bell className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -90,8 +173,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-panel border-t border-border/50 pb-safe">
-        <div className="flex items-center justify-around h-16 px-2">
-          {navItems.map((item) => {
+        <div className="flex items-center justify-around h-16 px-1">
+          {mobileBottomNav.map((item) => {
             const isActive = location === item.href;
             const Icon = item.icon;
             return (
@@ -99,7 +182,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors",
+                  "flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors",
                   isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -108,6 +191,38 @@ export function Shell({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+          {/* More button on mobile */}
+          <div className="relative flex-1" ref={moreRef}>
+            <button
+              onClick={() => setMoreOpen((v) => !v)}
+              className={cn(
+                "flex flex-col items-center justify-center w-full h-16 gap-0.5 transition-colors",
+                moreOpen ? "text-primary" : "text-muted-foreground"
+              )}
+            >
+              <ChevronDown className={cn("w-5 h-5 transition-transform", moreOpen && "rotate-180")} />
+              <span className="text-[10px] font-medium">More</span>
+            </button>
+            {moreOpen && (
+              <div className="absolute bottom-full right-0 mb-2 w-52 bg-background border border-border rounded-xl shadow-lg overflow-hidden z-50 py-1">
+                {[...moreNav, { href: "/cashback", icon: Percent, label: "Cashback" }, { href: "/group-buy", icon: Users, label: "Group Buy" }]
+                  .filter((item, idx, arr) => arr.findIndex(a => a.href === item.href) === idx)
+                  .map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors hover:bg-accent hover:text-primary",
+                        location === item.href ? "text-primary bg-accent" : "text-foreground"
+                      )}
+                    >
+                      <item.icon className="w-4 h-4 shrink-0 text-muted-foreground" />
+                      {item.label}
+                    </Link>
+                  ))}
+              </div>
+            )}
+          </div>
         </div>
       </nav>
     </div>
