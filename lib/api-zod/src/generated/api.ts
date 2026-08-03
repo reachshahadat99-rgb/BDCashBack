@@ -78,6 +78,7 @@ export const listMarketplaceProductsQueryLimitDefault = 12;
 export const listMarketplaceProductsQueryLimitMax = 50;
 
 
+
 export const ListMarketplaceProductsQueryParams = zod.object({
   "category": zod.coerce.string().optional(),
   "search": zod.coerce.string().optional(),
@@ -119,6 +120,7 @@ export const listWalletTransactionsQueryLimitDefault = 20;
 export const listWalletTransactionsQueryLimitMax = 100;
 
 
+
 export const ListWalletTransactionsQueryParams = zod.object({
   "limit": zod.coerce.number().min(1).max(listWalletTransactionsQueryLimitMax).default(listWalletTransactionsQueryLimitDefault)
 })
@@ -134,10 +136,14 @@ export const ListWalletTransactionsResponseItem = zod.object({
 })
 export const ListWalletTransactionsResponse = zod.array(ListWalletTransactionsResponseItem)
 
+
 /**
  * @summary Request a withdrawal of available balance
  */
 export const requestWithdrawalBodyAmountMin = 0.01;
+
+
+
 export const RequestWithdrawalBody = zod.object({
   "amount": zod.number().min(requestWithdrawalBodyAmountMin),
   "bankName": zod.string(),
@@ -536,7 +542,7 @@ export const ListGroupBuyDealsResponseItem = zod.object({
   "depositPaid": zod.number(),
   "dueAmount": zod.number(),
   "paymentMethod": zod.string(),
-  "paymentRef": zod.string(),
+  "paymentRef": zod.string().nullable(),
   "status": zod.string(),
   "createdAt": zod.string()
 }),zod.null()])
@@ -562,6 +568,7 @@ export const joinGroupBuyDealBodyAddressMax = 500;
 export const joinGroupBuyDealBodyQuantityMax = 5;
 
 
+
 export const JoinGroupBuyDealBody = zod.object({
   "fullName": zod.string().min(1).max(joinGroupBuyDealBodyFullNameMax),
   "phone": zod.string().min(joinGroupBuyDealBodyPhoneMin).max(joinGroupBuyDealBodyPhoneMax),
@@ -582,7 +589,7 @@ export const JoinGroupBuyDealResponse = zod.object({
   "depositPaid": zod.number(),
   "dueAmount": zod.number(),
   "paymentMethod": zod.string(),
-  "paymentRef": zod.string(),
+  "paymentRef": zod.string().nullable(),
   "status": zod.string(),
   "createdAt": zod.string()
 })
@@ -632,6 +639,7 @@ export const ListPublicCouponsResponse = zod.array(ListPublicCouponsResponseItem
  * @summary Validate a coupon against an order subtotal (checkout integration point)
  */
 export const validateCouponBodySubtotalMin = 0;
+
 
 
 export const ValidateCouponBody = zod.object({
@@ -793,6 +801,7 @@ export const createMerchantCouponBodyMinOrderValueMin = 0;
 export const createMerchantCouponBodyMaxUsesMin = 0;
 
 
+
 export const CreateMerchantCouponBody = zod.object({
   "code": zod.string().min(createMerchantCouponBodyCodeMin).max(createMerchantCouponBodyCodeMax),
   "title": zod.string().min(1).max(createMerchantCouponBodyTitleMax),
@@ -837,6 +846,7 @@ export const updateMerchantCouponBodyDiscountValueMin = 0;
 export const updateMerchantCouponBodyMinOrderValueMin = 0;
 
 export const updateMerchantCouponBodyMaxUsesMin = 0;
+
 
 
 export const UpdateMerchantCouponBody = zod.object({
@@ -899,6 +909,7 @@ export const createMerchantDealBodyDescriptionMax = 1000;
 export const createMerchantDealBodyDiscountPercentMax = 95;
 
 
+
 export const CreateMerchantDealBody = zod.object({
   "title": zod.string().min(1).max(createMerchantDealBodyTitleMax),
   "description": zod.string().max(createMerchantDealBodyDescriptionMax).optional(),
@@ -932,6 +943,7 @@ export const UpdateMerchantDealParams = zod.object({
 })
 
 export const updateMerchantDealBodyDiscountPercentMax = 95;
+
 
 
 export const UpdateMerchantDealBody = zod.object({
@@ -989,6 +1001,8 @@ export const ListMerchantGroupBuysResponse = zod.array(ListMerchantGroupBuysResp
 export const createMerchantGroupBuyBodyTitleMax = 160;
 
 
+
+
 export const createMerchantGroupBuyBodyCashbackPercentMin = 0;
 export const createMerchantGroupBuyBodyCashbackPercentMax = 100;
 
@@ -996,6 +1010,7 @@ export const createMerchantGroupBuyBodyDepositPercentMin = 5;
 export const createMerchantGroupBuyBodyDepositPercentMax = 100;
 
 export const createMerchantGroupBuyBodyMinParticipantsMin = 2;
+
 
 
 export const CreateMerchantGroupBuyBody = zod.object({
@@ -1122,6 +1137,7 @@ export const createAdminCouponBodyDiscountValueMin = 0;
 export const createAdminCouponBodyMinOrderValueMin = 0;
 
 export const createAdminCouponBodyMaxUsesMin = 0;
+
 
 
 export const CreateAdminCouponBody = zod.object({
@@ -1319,6 +1335,7 @@ export const createAdminGiftCardBrandBodyNameMax = 120;
 export const createAdminGiftCardBrandBodyDescriptionMax = 500;
 
 
+
 export const CreateAdminGiftCardBrandBody = zod.object({
   "name": zod.string().min(1).max(createAdminGiftCardBrandBodyNameMax),
   "logoUrl": zod.string().optional(),
@@ -1381,6 +1398,7 @@ export const UpdateAdminGiftCardBrandResponse = zod.object({
 export const createAdminGiftCardBodyStockMin = 0;
 
 
+
 export const CreateAdminGiftCardBody = zod.object({
   "brandId": zod.string(),
   "faceValue": zod.number().min(1),
@@ -1407,6 +1425,7 @@ export const UpdateAdminGiftCardParams = zod.object({
 
 
 export const updateAdminGiftCardBodyStockMin = 0;
+
 
 
 export const UpdateAdminGiftCardBody = zod.object({
@@ -1471,6 +1490,7 @@ export const createAdminFeeRuleBodyReturnPeriodDaysMin = 0;
 export const createAdminFeeRuleBodyReturnPeriodDaysMax = 60;
 
 
+
 export const CreateAdminFeeRuleBody = zod.object({
   "categoryId": zod.string(),
   "feePercent": zod.number().min(createAdminFeeRuleBodyFeePercentMin).max(createAdminFeeRuleBodyFeePercentMax),
@@ -1506,6 +1526,7 @@ export const updateAdminFeeRuleBodyReturnPeriodDaysMin = 0;
 export const updateAdminFeeRuleBodyReturnPeriodDaysMax = 60;
 
 
+
 export const UpdateAdminFeeRuleBody = zod.object({
   "feePercent": zod.number().min(updateAdminFeeRuleBodyFeePercentMin).max(updateAdminFeeRuleBodyFeePercentMax).optional(),
   "customerSharePercent": zod.number().min(updateAdminFeeRuleBodyCustomerSharePercentMin).max(updateAdminFeeRuleBodyCustomerSharePercentMax).optional(),
@@ -1522,4 +1543,5 @@ export const UpdateAdminFeeRuleResponse = zod.object({
   "returnPeriodDays": zod.number(),
   "active": zod.boolean()
 })
+
 

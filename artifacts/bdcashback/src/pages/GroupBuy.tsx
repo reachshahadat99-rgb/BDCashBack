@@ -107,7 +107,7 @@ function JoinDialog({
               </DialogDescription>
             </DialogHeader>
             <div className="rounded-xl border bg-muted/40 p-4 text-sm text-left space-y-2">
-              <div className="flex justify-between"><span className="text-muted-foreground">Payment ref</span><span className="font-mono font-semibold">{confirmedOrder.paymentRef}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Payment ref</span><span className="font-mono font-semibold">{confirmedOrder.paymentRef ?? "—"}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Quantity</span><span>{confirmedOrder.quantity}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Deposit paid</span><span className="font-semibold text-green-600">{formatCurrency(confirmedOrder.depositPaid)}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Due when group completes</span><span className="font-semibold">{formatCurrency(confirmedOrder.dueAmount)}</span></div>

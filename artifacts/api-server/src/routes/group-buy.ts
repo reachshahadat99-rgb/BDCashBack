@@ -9,7 +9,7 @@ import {
   ListGroupBuyDealsResponse,
   ListMerchantGroupBuysResponse,
 } from "@workspace/api-zod";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import {
   db,
   groupBuyDealsTable,
@@ -125,6 +125,7 @@ router.get("/group-buys", async (req, res): Promise<void> => {
       joined: sql<number>`coalesce(sum(${groupBuyOrdersTable.quantity}), 0)`.mapWith(Number),
     })
     .from(groupBuyOrdersTable)
+    .where(eq(groupBuyOrdersTable.status, "reserved"))
     .groupBy(groupBuyOrdersTable.dealId);
   const countByDeal = new Map(counts.map((c) => [c.dealId, c.joined]));
 
@@ -132,7 +133,12 @@ router.get("/group-buys", async (req, res): Promise<void> => {
     ? await db
         .select()
         .from(groupBuyOrdersTable)
-        .where(eq(groupBuyOrdersTable.customerId, userId))
+        .where(
+          and(
+            eq(groupBuyOrdersTable.customerId, userId),
+            eq(groupBuyOrdersTable.status, "reserved"),
+          ),
+        )
     : [];
   const myOrderByDeal = new Map(myOrders.map((o) => [o.dealId, o]));
 
@@ -189,71 +195,169 @@ router.post("/group-buys/:id/join", requireAuth, async (req, res): Promise<void>
     return;
   }
 
-  const [deal] = await db
-    .select()
-    .from(groupBuyDealsTable)
-    .where(eq(groupBuyDealsTable.id, params.data.id))
-    .limit(1);
-  if (!deal || deal.approvalStatus !== "approved") {
-    res.status(404).json({ error: "Group buy deal not found" });
-    return;
-  }
-  if (deal.status !== "open" || deal.endsAt.getTime() < Date.now()) {
-    res.status(409).json({ error: "This group buy has closed" });
-    return;
-  }
-
   const customerId = res.locals.userId as string;
-  const unitPrice = money(deal.groupPrice);
-  const totalAmount = unitPrice * quantity;
-  const depositPaid = Math.round((totalAmount * money(deal.depositPercent)) / 100);
-  const dueAmount = totalAmount - depositPaid;
 
-  let paymentRef: string;
-  try {
-    const charge = await paymentService.charge({
-      customerId,
-      amount: depositPaid,
-      method: paymentMethod,
-      purpose: `group-buy-deposit:${deal.id}`,
-    });
-    paymentRef = charge.reference;
-  } catch {
-    res.status(402).json({ error: "Deposit payment failed. Please try again." });
-    return;
-  }
+  const result = await executeJoin({
+    dealId: params.data.id,
+    customerId,
+    fullName: fullName.trim(),
+    phone: phoneDigits,
+    address: address.trim(),
+    quantity,
+    paymentMethod,
+  });
 
-  try {
-    const [order] = await db
-      .insert(groupBuyOrdersTable)
-      .values({
-        id: `gborder_${crypto.randomUUID()}`,
-        dealId: deal.id,
-        customerId,
-        fullName: fullName.trim(),
-        phone: phoneDigits,
-        address: address.trim(),
-        quantity,
-        unitPrice: String(unitPrice),
-        totalAmount: String(totalAmount),
-        depositPaid: String(depositPaid),
-        dueAmount: String(dueAmount),
-        paymentMethod,
-        paymentRef,
-        status: "reserved",
-      })
-      .returning();
-
-    res.status(201).json(JoinGroupBuyDealResponse.parse(orderView(order)));
-  } catch (error: unknown) {
-    const pgError = error as { code?: string };
-    if (pgError.code === "23505") {
+  switch (result.kind) {
+    case "not_found":
+      res.status(404).json({ error: "Group buy deal not found" });
+      return;
+    case "closed":
+      res.status(409).json({ error: "This group buy has closed" });
+      return;
+    case "already_joined":
       res.status(409).json({ error: "You have already joined this group buy" });
       return;
-    }
-    throw error;
+    case "payment_failed":
+      res.status(402).json({ error: "Deposit payment failed. Please try again." });
+      return;
+    case "ok":
+      res.status(201).json(JoinGroupBuyDealResponse.parse(orderView(result.order)));
+      return;
   }
 });
+
+export type JoinOutcome =
+  | { kind: "ok"; order: typeof groupBuyOrdersTable.$inferSelect }
+  | { kind: "not_found" }
+  | { kind: "closed" }
+  | { kind: "already_joined" }
+  | { kind: "payment_failed" };
+
+/** Sentinel used to roll the join transaction back on a failed charge. */
+class DepositPaymentFailedError extends Error {}
+
+/** Sentinel: the unique (deal, customer) index rejected a duplicate join. */
+class AlreadyJoinedError extends Error {}
+
+/** True when the error (possibly wrapped by Drizzle) is a unique violation. */
+function isUniqueViolation(error: unknown): boolean {
+  let current: unknown = error;
+  for (let depth = 0; current && depth < 5; depth++) {
+    if ((current as { code?: string }).code === "23505") return true;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
+/**
+ * Join a group-buy deal. The entire flow — deal open/closed check, pending
+ * (unpaid) reservation insert, deposit charge, and confirmation — runs inside
+ * a single transaction holding a FOR UPDATE lock on the deal row. That makes
+ * the open-check + insert atomic (late joins can't slip through) and
+ * serializes concurrent joins for the same deal, so one request can never
+ * observe or disturb another's in-flight pending reservation: a duplicate
+ * join hits the unique (deal, customer) index *before* any money moves, and a
+ * failed charge rolls the pending row back so nothing unpaid ever persists or
+ * counts toward the deal.
+ *
+ * Note: the charge runs inside the transaction. That is acceptable while the
+ * payment service is the local recorded implementation; a slow external
+ * gateway should switch to an idempotency-key / advisory-lock pattern instead
+ * of holding the row lock across the network call.
+ */
+export async function executeJoin(input: {
+  dealId: string;
+  customerId: string;
+  fullName: string;
+  phone: string;
+  address: string;
+  quantity: number;
+  paymentMethod: "bkash" | "nagad" | "card";
+}): Promise<JoinOutcome> {
+  try {
+    return await db.transaction(async (tx): Promise<JoinOutcome> => {
+      const [deal] = await tx
+        .select()
+        .from(groupBuyDealsTable)
+        .where(eq(groupBuyDealsTable.id, input.dealId))
+        .for("update")
+        .limit(1);
+      if (!deal || deal.approvalStatus !== "approved") return { kind: "not_found" };
+      if (deal.status !== "open" || deal.endsAt.getTime() < Date.now()) {
+        return { kind: "closed" };
+      }
+
+      const unitPrice = money(deal.groupPrice);
+      const totalAmount = unitPrice * input.quantity;
+      const depositPaid = Math.round((totalAmount * money(deal.depositPercent)) / 100);
+      const dueAmount = totalAmount - depositPaid;
+
+      // Step 1 — create the pending (unpaid) reservation. The unique
+      // (deal, customer) index rejects duplicates before any charge happens.
+      let pendingOrder: typeof groupBuyOrdersTable.$inferSelect;
+      try {
+        const [inserted] = await tx
+          .insert(groupBuyOrdersTable)
+          .values({
+            id: `gborder_${crypto.randomUUID()}`,
+            dealId: deal.id,
+            customerId: input.customerId,
+            fullName: input.fullName,
+            phone: input.phone,
+            address: input.address,
+            quantity: input.quantity,
+            unitPrice: String(unitPrice),
+            totalAmount: String(totalAmount),
+            depositPaid: String(depositPaid),
+            dueAmount: String(dueAmount),
+            paymentMethod: input.paymentMethod,
+            paymentRef: null,
+            status: "pending_payment",
+          })
+          .returning();
+        pendingOrder = inserted;
+      } catch (error: unknown) {
+        // The failed insert aborted the transaction; bail out through the
+        // outer catch so the rollback is clean.
+        if (isUniqueViolation(error)) throw new AlreadyJoinedError();
+        throw error;
+      }
+
+      // Step 2 — take the deposit. A failure throws, rolling back the
+      // pending reservation so nothing unpaid persists.
+      let paymentRef: string;
+      try {
+        const charge = await paymentService.charge({
+          customerId: input.customerId,
+          amount: depositPaid,
+          method: input.paymentMethod,
+          purpose: `group-buy-deposit:${deal.id}`,
+        });
+        paymentRef = charge.reference;
+      } catch {
+        throw new DepositPaymentFailedError();
+      }
+
+      // Step 3 — confirm the reservation with the verified payment reference.
+      const [order] = await tx
+        .update(groupBuyOrdersTable)
+        .set({ paymentRef, status: "reserved" })
+        .where(
+          and(
+            eq(groupBuyOrdersTable.id, pendingOrder.id),
+            eq(groupBuyOrdersTable.status, "pending_payment"),
+          ),
+        )
+        .returning();
+      if (!order) throw new Error("Pending group-buy reservation disappeared before confirmation");
+      return { kind: "ok", order };
+    });
+  } catch (error: unknown) {
+    if (error instanceof DepositPaymentFailedError) return { kind: "payment_failed" };
+    if (error instanceof AlreadyJoinedError) return { kind: "already_joined" };
+    throw error;
+  }
+}
 
 export async function campaignProgress(dealIds?: string[]) {
   const rows = await db
@@ -263,6 +367,7 @@ export async function campaignProgress(dealIds?: string[]) {
       deposits: sql<number>`coalesce(sum(${groupBuyOrdersTable.depositPaid}), 0)`.mapWith(Number),
     })
     .from(groupBuyOrdersTable)
+    .where(eq(groupBuyOrdersTable.status, "reserved"))
     .groupBy(groupBuyOrdersTable.dealId);
   const map = new Map(rows.map((r) => [r.dealId, r]));
   return (dealId: string) => map.get(dealId) ?? { dealId, joined: 0, deposits: 0 };

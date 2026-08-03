@@ -211,8 +211,10 @@ export const groupBuyOrdersTable = pgTable(
     depositPaid: numeric("deposit_paid", { precision: 12, scale: 2 }).notNull(),
     dueAmount: numeric("due_amount", { precision: 12, scale: 2 }).notNull(),
     paymentMethod: text("payment_method").notNull(),
-    paymentRef: text("payment_ref").notNull(),
-    status: text("status").notNull().default("reserved"),
+    /** Set only after the deposit payment is verified; null while pending. */
+    paymentRef: text("payment_ref"),
+    /** pending_payment | reserved — reserved only after a verified deposit. */
+    status: text("status").notNull().default("pending_payment"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({

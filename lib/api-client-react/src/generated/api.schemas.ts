@@ -243,7 +243,8 @@ export interface GroupBuyOrder {
   depositPaid: number;
   dueAmount: number;
   paymentMethod: string;
-  paymentRef: string;
+  /** @nullable */
+  paymentRef: string | null;
   status: string;
   createdAt: string;
 }
@@ -694,3 +695,4 @@ limit?: number;
 export type ListPromoDealsParams = {
 featured?: boolean;
 };
+

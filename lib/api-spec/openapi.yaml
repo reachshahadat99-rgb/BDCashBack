@@ -1761,7 +1761,8 @@ components:
         depositPaid: { type: number }
         dueAmount: { type: number }
         paymentMethod: { type: string }
-        paymentRef: { type: string }
+        paymentRef:
+          type: ["string", "null"]
         status: { type: string }
         createdAt: { type: string }
       required: [id, dealId, fullName, phone, address, quantity, unitPrice, totalAmount, depositPaid, dueAmount, paymentMethod, paymentRef, status, createdAt]
