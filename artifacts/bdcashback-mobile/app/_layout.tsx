@@ -13,8 +13,9 @@ import {
   PlusJakartaSans_700Bold,
   useFonts,
 } from '@expo-google-fonts/plus-jakarta-sans';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Notifications from 'expo-notifications';
 import { setBaseUrl } from '@workspace/api-client-react';
 import { useAuthTokenWiring } from '@/hooks/useAuthTokenWiring';
 
@@ -34,6 +35,36 @@ const proxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
 /** Sets the bearer-token getter and clears the query cache on user changes. */
 function AuthTokenSetter() {
   useAuthTokenWiring(queryClient);
+  return null;
+}
+
+/**
+ * Listens for notification taps (response received) and deep-links the user
+ * to the screen indicated by `data.route` in the notification payload.
+ * Fired whether the app was in the foreground, background, or cold-started
+ * via the notification.
+ */
+function PushNotificationHandler() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Handle taps on notifications that arrive while the app is open or backgrounded
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const data = response.notification.request.content.data as
+          | Record<string, unknown>
+          | undefined;
+        const route = typeof data?.route === 'string' ? data.route : null;
+        if (route) {
+          // Small delay to let the app finish cold-start navigation if needed
+          setTimeout(() => router.push(route as any), 100);
+        }
+      },
+    );
+
+    return () => subscription.remove();
+  }, [router]);
+
   return null;
 }
 
@@ -81,6 +112,7 @@ export default function RootLayout() {
               <GestureHandlerRootView style={{ flex: 1 }}>
                 <KeyboardProvider>
                   <AuthTokenSetter />
+                  <PushNotificationHandler />
                   <RootLayoutNav />
                 </KeyboardProvider>
               </GestureHandlerRootView>

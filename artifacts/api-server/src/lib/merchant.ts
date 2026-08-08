@@ -9,6 +9,7 @@ import {
   merchantStoresTable,
 } from "@workspace/db";
 import { money } from "./money";
+import { sendPushToUser } from "./push-notifications";
 
 export const storeView = (store: typeof merchantStoresTable.$inferSelect) => ({
   id: store.id,
@@ -206,7 +207,9 @@ export async function updateMerchantOrderStatus(
   merchantOrderId: string,
   newStatus: "processing" | "shipped" | "delivered",
 ) {
-  return db.transaction(async (tx) => {
+  // Transaction returns the merchant order view plus optional notification data.
+  // Notification is fired after the transaction commits so it is always non-fatal.
+  const { view, notification } = await db.transaction(async (tx) => {
     // 1. Resolve store for this merchant
     const [store] = await tx
       .select({ id: merchantStoresTable.id })
@@ -247,6 +250,8 @@ export async function updateMerchantOrderStatus(
 
     // 5. If delivered: check whether all sibling merchant orders are done,
     //    and if so mark the customer order as delivered (triggers cashback release)
+    let notification: { userId: string; cashbackAmount: number } | null = null;
+
     if (newStatus === "delivered") {
       // Find the customer order that contains this merchant order
       const [item] = await tx
@@ -280,7 +285,7 @@ export async function updateMerchantOrderStatus(
 
         if (allDone) {
           const now = new Date();
-          await tx
+          const [deliveredCustomerOrder] = await tx
             .update(customerOrdersTable)
             .set({ status: "delivered", deliveredAt: now, updatedAt: now })
             .where(
@@ -289,11 +294,38 @@ export async function updateMerchantOrderStatus(
                 // Idempotency guard: only advance if not already delivered/completed
                 inArray(customerOrdersTable.status, ["paid", "processing", "shipped"]),
               ),
-            );
+            )
+            .returning({
+              userId: customerOrdersTable.userId,
+              cashbackAmount: customerOrdersTable.cashbackAmount,
+            });
+
+          if (deliveredCustomerOrder) {
+            notification = {
+              userId: deliveredCustomerOrder.userId,
+              cashbackAmount: money(deliveredCustomerOrder.cashbackAmount),
+            };
+          }
         }
       }
     }
 
-    return merchantOrderView(updated!);
+    return { view: merchantOrderView(updated!), notification };
   });
+
+  // Fire push notification outside the transaction so it never blocks the tx
+  if (notification !== null) {
+    const { userId, cashbackAmount } = notification as { userId: string; cashbackAmount: number };
+    const amountStr = cashbackAmount.toFixed(2);
+    await sendPushToUser(userId, {
+      title: "Order Delivered! 🎉",
+      body:
+        cashbackAmount > 0
+          ? `Your order has been delivered. ৳${amountStr} cashback is being processed.`
+          : "Your order has been delivered.",
+      data: { route: "/(tabs)/wallet" },
+    });
+  }
+
+  return view;
 }

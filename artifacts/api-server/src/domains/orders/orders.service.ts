@@ -26,6 +26,7 @@ import {
 import { money, round2 } from "../../lib/money";
 import { validateCouponEligibility } from "../../lib/coupon-validator";
 import { ensureWalletSnapshot } from "../wallet/wallet.service";
+import { sendPushToUser } from "../../lib/push-notifications";
 
 // ---------------------------------------------------------------------------
 // Cart
@@ -619,7 +620,7 @@ export async function releaseMatureCashback() {
  * or did not exist in "delivered" state.
  */
 export async function releaseCashbackForOrder(orderId: string, userId: string) {
-  const didRelease = await db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     const now = new Date();
 
     // Atomic status transition: only succeeds once per order
@@ -636,7 +637,7 @@ export async function releaseCashbackForOrder(orderId: string, userId: string) {
 
     if (updated.length === 0) {
       // Already completed or wrong state — skip silently
-      return false;
+      return { released: false, cashback: 0 };
     }
 
     const cashback = money(updated[0]!.cashbackAmount);
@@ -665,8 +666,17 @@ export async function releaseCashbackForOrder(orderId: string, userId: string) {
         .where(eq(walletSnapshotsTable.id, userId));
     }
 
-    return true;
+    return { released: true, cashback };
   });
 
-  return didRelease;
+  // Send push notification outside the transaction so it never breaks the release flow
+  if (result.released && result.cashback > 0) {
+    await sendPushToUser(userId, {
+      title: "Cashback Earned! 💰",
+      body: `৳${result.cashback.toFixed(2)} cashback has been added to your wallet.`,
+      data: { route: "/(tabs)/wallet" },
+    });
+  }
+
+  return result.released;
 }
