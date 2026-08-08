@@ -1,0 +1,103 @@
+You are a Senior Full Stack Engineer working inside the existing BDCashBack codebase (React + Vite + wouter + TanStack Query + shadcn/ui + Tailwind, Express + TypeScript, PostgreSQL via Drizzle, Clerk auth, audit logging via writeAuditLog()). Match existing patterns exactly — do not introduce a different stack or ORM.
+
+This prompt covers three separate pieces of work. Do them in this order, and treat them as separate verifiable steps — do not mix commits/changes across them.
+
+Watch & Earn — does not exist yet. Full new build (backend + frontend).
+Cashback Claim visibility/consistency — every cashback-eligible product across the platform must show and let the user claim/track cashback consistently.
+Group Buy cashback fix — the documented spec says group buy participants get a 50% cashback share on campaign success, but this is reportedly not working in the live app. Audit and fix.
+PART 1 — Watch & Earn (New Feature)
+
+Two reward systems, both feeding into the existing wallet_transactions ledger (reuse cashback_pending/cashback_released-style transaction types, or add new types like watch_earn_reward — match the existing enum pattern, don't invent a parallel wallet system).
+
+System 1 — Rewarded Ad Network
+Integrate a rewarded video ad SDK (e.g., Google AdMob rewarded ads, or whatever ad network is easiest to wire into a web app — confirm which one the project wants before hardcoding a vendor).
+Customer watches a rewarded ad → on verified completion callback from the ad SDK → credit a small reward to their wallet (reward points and/or wallet balance — confirm which; do not silently pick without checking existing reward point handling).
+Daily/hourly cap per user to prevent abuse (config value, not hardcoded).
+System 2 — Sponsored Merchant Video Campaigns
+
+New DB tables (Drizzle, follow existing table/column naming conventions in the codebase):
+
+watch_earn_campaigns: id, merchantStoreId, videoUrl (Cloudinary or existing storage), budget, rewardPerView, maxViews, currentViews, startDate, endDate, status (pending → approved/rejected → active → completed/paused/exhausted), createdAt
+watch_earn_views: id, campaignId, userId, viewedAt, completed (bool), verified (bool), rewardCredited (bool), deviceFingerprint or similar fraud signal, ipAddress
+
+New routes:
+
+POST /watch-earn/campaigns/:id/view — record a view attempt (start)
+PATCH /watch-earn/campaigns/:id/view/:viewId/complete — mark complete on verified playback finish (client reports completion, but treat this as untrusted input — see fraud detection below)
+GET /watch-earn/campaigns — active campaigns available to the customer
+POST /merchant/watch-earn/campaigns — merchant creates a campaign (status starts pending)
+GET /merchant/watch-earn/campaigns — merchant's own campaigns + performance (views, spend, remaining budget)
+GET /admin/watch-earn/campaigns — all campaigns
+PATCH /admin/watch-earn/campaigns/:id/status — approve/reject/pause (writes to audit_logs)
+GET /admin/watch-earn/fraud-flags — flagged view patterns
+
+Fraud detection (required, do not ship without it):
+
+Reject/flag views where: same user completes the same campaign's video implausibly fast repeatedly, same device fingerprint / IP claims many distinct user accounts in a short window, completion event fires without a plausible minimum watch duration matching the video length.
+Flagged views do not auto-credit reward — they go into an admin review queue (GET /admin/watch-earn/fraud-flags), matching the pattern of other admin approval queues already in the system.
+Reward is only credited once verified = true, never on raw client "I finished" signal alone.
+
+Merchant budget enforcement: a campaign cannot pay out more than budget; stop crediting once currentViews * rewardPerView >= budget and mark status = exhausted.
+
+Frontend
+Customer: /watch-earn page — list of available rewarded ads + sponsored campaigns, reward amount shown per item, simple watch flow, "Reward Credited" confirmation state (or "Pending Review" state if flagged).
+Merchant: new tab in /merchant (e.g. /merchant/watch-earn) — create campaign (video upload, budget, reward/view, max views, duration), view performance.
+Admin: new tab in /admin — campaign approval queue, fraud flags review, same list/detail/action pattern as the other admin tabs already built.
+PART 2 — Cashback Claim Consistency (Every Cashback-Eligible Product)
+
+Problem to fix: cashback visibility/claim is inconsistent across the site. Every place a cashback-eligible product appears must show the cashback clearly and give the user a consistent way to see/track it through to claim.
+
+Audit first
+
+Check every surface where a product/deal/campaign with a cashback % can appear, and confirm each one currently shows it:
+
+Product listing (/products)
+Product detail page
+Flash deals (/deals, homepage carousel)
+Promo deals (/deals)
+Group buy campaigns (/group-buy) — see Part 3, this is currently broken
+Gift cards — confirm whether gift cards carry cashback at all per the current business rules, or only marketplace/merchant products do; don't add a cashback badge where none is meant to exist
+Cart and checkout summary — show total cashback the order will generate, not just per-item
+Order confirmation / order detail — show cashback status per item (pending/released/reversed)
+What "Claim" means here
+
+Cashback in this system isn't a manual claim button that credits money on click — it auto-moves from cashback_pending to cashback_released after delivery + the return window, per the existing lifecycle. So "Claim" in the UI means: the user can always see where their cashback stands and there is a clear moment where it becomes available/withdrawable — not a literal "Claim Now" button that bypasses the return-window logic. Do not build a UI that lets a user click something and get cashback released early; that would break the fraud/return-window protection already in the system.
+
+Build:
+
+A consistent cashback badge component (e.g., "Up to X% Cashback") used everywhere a product/deal/campaign appears — one shared component, not five different implementations.
+On /cashback (already exists per current pages) and /orders/order detail: clear per-order, per-item breakdown showing status (Pending — releases after [date], Available, Reversed — order [cancelled/refunded]).
+On /wallet: availableCashback should be the number that's actually withdrawable — confirm the withdraw flow only pulls from availableCashback, never pendingCashback.
+A "See Cashback Details" link/click-through from any product cashback badge to that item's status once purchased (via order detail), so the badge isn't just decorative.
+PART 3 — Group Buy Cashback Fix
+
+The documented business logic (already in the system reference) says:
+
+Success (≥ minParticipants joined): 50% cashback share released to all participants' availableCashback Failure (< minParticipants): full deposit refunded to balance + availableCashback
+
+Reported issue: group buy currently shows/produces no cashback at all.
+
+Audit first — don't assume the fix, find the actual gap
+Check the campaign-settlement processor (the job/function that runs when a campaign ends) — does it actually create a cashback_released-type wallet_transactions entry for each participant on success, or does it only handle the deposit/refund side and skip cashback entirely?
+Check group_buy_deals — does the table even carry a cashback % or cashback amount field per campaign? If not, that's the root gap — the settlement logic has nothing to calculate from.
+Check whether group_buy_orders correctly locks in the participant's entitled cashback amount at time of join/reservation (price snapshot pattern, same as customer_cart_items does), or whether it's missing entirely.
+Check the frontend (/group-buy campaign cards, campaign detail) — is it even querying/displaying a cashback field, or was it never wired into the UI regardless of backend state?
+Fix, in dependency order
+If missing, add a cashback % / cashback amount field to group_buy_deals (merchant sets this at campaign creation, same as success_fee_rules category logic elsewhere in the system — category-wise fee still applies, cashback share is 50% of the platform's success fee, per the documented model).
+Ensure group_buy_orders snapshots the entitled cashback amount at reservation time.
+Fix the settlement processor so that on success (≥ minParticipants), for every reserved order it writes a cashback_pending (or, if group buy skips the return-window wait — confirm this against the documented flow, which says "released to availableCashback" directly, not "pending") wallet transaction per participant, using FOR UPDATE locking consistent with the rest of the settlement code.
+Confirm failure path already correctly refunds deposit — the doc says this exists; verify, don't rebuild if it's already correct.
+Wire the frontend to actually display the cashback % on group buy campaign cards and campaign detail, and reflect it in the wallet/cashback history views built in Part 2.
+Verification
+Create a test campaign, reach minParticipants, run/trigger settlement, confirm wallet_transactions gets the expected entries and wallet_snapshots/availableCashback reflects it correctly for each participant.
+Create a test campaign that fails to reach target, confirm refund path still works and no cashback entries are incorrectly created.
+Confirm audit_logs captures the settlement action if admin-triggered, or that the automated processor's actions are still traceable (log entry, even if not an "admin" action).
+Build Order Summary
+Group Buy cashback fix (Part 3) — smallest scope, fixes a real bug in existing money flow, highest priority
+Cashback Claim consistency (Part 2) — mostly frontend, benefits from Part 3 being fixed first (nothing to display otherwise for group buy)
+Watch & Earn (Part 1) — largest new scope, build last
+Verification Checklist
+ Group Buy: success and failure paths both tested, wallet ledger entries correct, no double-crediting on repeated settlement runs (idempotency check — what happens if the processor runs twice on the same campaign?)
+ Cashback badges: one shared component used across all surfaces, no page missing it where it should apply, none showing it where it shouldn't (gift cards, if not eligible)
+ Watch & Earn: fraud detection rejects implausible completions in testing, merchant budget cap enforced, admin approval queue works for both campaign approval and fraud flag review, all mutations audit-logged
+ No regression to existing checkout, wallet, or withdrawal flows

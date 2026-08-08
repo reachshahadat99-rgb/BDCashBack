@@ -202,6 +202,11 @@ export async function executeJoin(input: {
       const totalAmount = unitPrice * input.quantity;
       const depositPaid = Math.round((totalAmount * money(deal.depositPercent)) / 100);
       const dueAmount = totalAmount - depositPaid;
+      // Snapshot the cashback entitlement at reservation time so settlement uses
+      // the rate the participant agreed to, not the rate at processing time.
+      const cashbackAmountEntitled = Math.round(
+        (totalAmount * money(deal.cashbackPercent)) / 100 / 2,
+      );
 
       let pendingOrder: typeof groupBuyOrdersTable.$inferSelect;
       try {
@@ -219,6 +224,7 @@ export async function executeJoin(input: {
             totalAmount: String(totalAmount),
             depositPaid: String(depositPaid),
             dueAmount: String(dueAmount),
+            cashbackAmountEntitled: String(cashbackAmountEntitled),
             paymentMethod: input.paymentMethod,
             paymentRef: null,
             status: "pending_payment",

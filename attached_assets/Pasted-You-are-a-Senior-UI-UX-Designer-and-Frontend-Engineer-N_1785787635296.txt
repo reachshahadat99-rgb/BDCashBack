@@ -1,0 +1,105 @@
+You are a Senior UI/UX Designer and Frontend Engineer (Next.js, TypeScript, Tailwind CSS, shadcn/ui).
+
+Task: Design and build a premium, modern, conversion-focused Homepage for BDCashBack, plus two separate signup flows — one for Customers, one for Merchants. Do not merge them into a single generic signup form.
+
+This does not touch backend business logic (wallet, cashback, orders) — this is a frontend/UI task on top of the existing app. Reuse existing auth/API routes where they exist; only build new UI + new merchant-specific fields/route if missing.
+
+1. Homepage Requirements
+Look & Feel
+Premium, modern, trustworthy — this is a cashback/marketplace platform, so it should feel like a hybrid of a deals site and a fintech app (think: energetic but not cluttered, cashback amounts and percentages visually prominent).
+Mobile-first, fully responsive, dark mode + light mode.
+Fast — optimized images (Cloudinary, next/image), lazy-loaded below-the-fold sections, skeleton loaders while data fetches.
+SEO-friendly: proper meta tags, semantic HTML, OG tags for social sharing.
+Sections (in order)
+Header / Navbar
+Logo, search bar (product/store search), categories dropdown
+Wallet/cashback quick-glance icon (if logged in)
+Dark/light toggle
+Two distinct CTAs: "Sign Up" (customer) and "Sell on BDCashBack" (merchant) — visually different, merchant CTA can be a secondary/outline style, not competing with customer CTA
+Login (single login entry point, role detected after auth — see Section 3)
+Hero Section
+Large headline focused on cashback value prop (e.g., highlight "Up to X% Cashback" dynamically pulled from live top offers)
+Primary CTA: "Start Shopping" or "Explore Deals"
+Secondary CTA: "Become a Merchant"
+Background: subtle gradient or animated illustration, not a generic stock photo
+Trust Bar
+Total cashback paid out, active merchants, active users, orders completed — real numbers pulled from DB (with a fallback if zero/new platform)
+Category Grid
+Visual category cards (icon/image + name), clickable, horizontally scrollable on mobile
+Flash Deals Carousel
+Countdown timer per deal, cashback % badge, "X sold" progress bar where relevant
+Skeleton loader while fetching
+Featured Stores
+Store cards: logo, name, cashback rate, rating
+Group Buy Highlights
+Active campaigns with progress bar, countdown, "X/Y joined"
+Gift Cards Strip
+Brand logos, discount %, "Buy Now" quick links
+Trending Deals
+Product grid with cashback badge, price, original price strikethrough
+How Cashback Works (trust/education section)
+3-4 step visual explainer: Shop → Wait for delivery + return window → Cashback moves to Available → Withdraw or use in-app
+Merchant CTA Band
+Standalone section: "Sell on BDCashBack — Free store, no listing fees, pay only on successful sale" with a "Get Started" button leading to Merchant Signup
+Watch & Earn Teaser
+Short section previewing "Earn by watching" with CTA into that feature
+App Download / Newsletter (if applicable)
+Footer
+Standard: About, Terms, Privacy, Support, Categories, Social links, Payment method icons (SSLCommerz, bKash, Nagad, Rocket, Visa, Mastercard)
+Performance/Data Rules
+Every dynamic section (deals, stores, trending, group buy) must have a loading skeleton and an empty state (no fake/placeholder data left in production code).
+No layout shift — reserve space for images/cards before they load.
+2. Separate Signup Flows — Customer vs Merchant
+
+Do not use one shared signup form with a role dropdown. Two distinct entry points, two distinct forms, two distinct post-signup flows.
+
+Customer Signup (/signup or /signup/customer)
+
+Fields:
+
+Full Name
+Email
+Phone Number
+Password (+ confirm)
+Referral Code (optional)
+Terms & Privacy checkbox (required)
+
+Flow:
+
+Email/OTP verification (per existing Auth.js OTP-ready setup)
+On success → redirect to Customer Dashboard / Homepage with a "Welcome" toast
+Optional: prompt to complete profile (address, preferences) — skippable
+Merchant Signup (/signup/merchant or /sell)
+
+This must feel like a separate onboarding funnel, not a form field toggle. Multi-step is preferred over one long form:
+
+Step 1 — Business Basics
+
+Store Name
+Business Type (Individual / Registered Business)
+Category(ies) you'll sell in
+Phone, Email
+
+Step 2 — Verification
+
+NID or Trade License upload (Cloudinary)
+Business Address
+Bank/Mobile Wallet details for payout (bKash/Nagad/Rocket/Bank)
+
+Step 3 — Store Setup
+
+Store Logo/Banner upload
+Short Store Description
+Return Policy acknowledgment (platform's standard return window terms)
+
+Step 4 — Review & Submit
+
+Summary of entered info
+Terms for Merchants (fee structure disclosure: "No listing fee, success fee only on completed sale") shown explicitly before submit
+Submit → status becomes Pending Admin Approval (ties into Admin Panel → Merchant Onboarding Queue from the earlier spec)
+
+Post-submit:
+
+Merchant sees a "Pending Approval" screen/dashboard state — not full merchant panel access — until Admin approves (per RBAC).
+Email notification on approval/rejection.
+Login (sha...

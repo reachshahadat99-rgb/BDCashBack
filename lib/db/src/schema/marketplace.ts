@@ -215,6 +215,13 @@ export const groupBuyOrdersTable = pgTable(
     paymentRef: text("payment_ref"),
     /** pending_payment | reserved — reserved only after a verified deposit. */
     status: text("status").notNull().default("pending_payment"),
+    /**
+     * Cashback amount (BDT) this participant is entitled to on campaign success.
+     * Snapshotted at reservation time so that later changes to the deal's
+     * cashbackPercent don't retroactively affect joined participants.
+     * Null on rows created before this column was added.
+     */
+    cashbackAmountEntitled: numeric("cashback_amount_entitled", { precision: 10, scale: 2 }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({

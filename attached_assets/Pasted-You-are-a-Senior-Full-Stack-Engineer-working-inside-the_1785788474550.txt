@@ -1,0 +1,94 @@
+You are a Senior Full Stack Engineer working inside the existing BDCashBack codebase (React + Vite + wouter + TanStack Query + shadcn/ui + Tailwind, Express + TypeScript backend, PostgreSQL via Drizzle, Clerk auth). Reuse existing patterns — do not introduce Next.js, Prisma, or a different auth system.
+
+Task: Rebuild the /admin panel into a complete control center with four pillars:
+
+A real Dashboard (not just a tab list)
+Payment Settings (gateway configuration — currently missing from the system)
+Full website control (every module the platform has)
+Admin has the same operational capability inside a merchant's store as the merchant does — admin should never be blocked from doing anything a merchant can do, for support/moderation/emergency purposes
+
+This is mostly a rebuild of the admin frontend on top of existing routes, plus two genuinely new backend pieces (Payment Settings, Merchant-parity actions) called out explicitly below — don't silently expand scope beyond those two.
+
+Part 1 — Dashboard (new, replaces "just tabs")
+
+Route: /admin (landing page of the panel, before drilling into any tab)
+
+Build from data already available across existing endpoints (/admin/orders, /admin/withdrawals, /admin/merchants, /admin/wallet/transactions, /admin/cashback/queue) — do not create new aggregate endpoints unless composing them client-side is genuinely impractical; if you do need one summary endpoint, keep it to a single GET /admin/dashboard/summary rather than many.
+
+Widgets:
+
+GMV / total sales (today, this week, this month)
+Orders by status breakdown (pending_payment, paid, processing, shipped, delivered, completed, cancelled, refunded)
+Pending items needing action: merchant approvals, withdrawal requests, coupon approvals, promo deal approvals, group buy approvals, cashback release queue — each a clickable count that jumps to that tab pre-filtered
+Revenue chart: platform revenue vs cashback paid out, by day/week/month (Recharts or existing chart lib in the project — check first)
+Recent audit log entries (last 10, link to full /admin/audit-logs)
+Part 2 — Payment Settings (NEW backend + frontend)
+
+This does not exist in the current system yet — flag it as new work, don't assume a hidden route.
+
+Backend (new)
+New table, e.g. payment_gateway_settings: gateway name (SSLCommerz, bKash, Nagad, Rocket, Visa/Mastercard-via-SSLCommerz), enabled flag, store ID/merchant key, secret key (encrypted at rest, never returned in plaintext to the frontend after initial save), sandbox/live mode toggle, updated_by, updated_at
+New routes:
+GET /admin/payment-settings — list all gateways + status (secrets masked)
+PATCH /admin/payment-settings/:gateway — update config (admin only, write to audit_logs like every other admin mutation)
+Secrets must never be logged or exposed in any GET response body — mask as ••••1234 style if returning anything at all.
+Frontend (new tab)
+One card per payment method, toggle enabled/disabled, edit credentials (masked input, only overwrites on explicit change), sandbox/live indicator
+Test connection button per gateway if the underlying SDK supports a lightweight ping/validation call — otherwise omit rather than fake it
+Part 3 — Full Website Control (rebuild existing tabs on real routes)
+
+Rebuild the admin panel's tabs cleanly, each backed by its already-existing route — this part is UI work, not new backend, unless noted:
+
+Tab	Route(s) already available
+Merchants	GET /admin/merchants, PATCH /admin/merchants/:id/status
+Orders	GET /admin/orders, PATCH /admin/orders/:id/status
+Withdrawals	GET /admin/withdrawals, PATCH /admin/withdrawals/:id
+Coupons	GET /admin/coupons, POST /admin/coupons, PATCH /admin/coupons/:id
+Promo Deals	GET /admin/promo-deals, PATCH /admin/promo-deals/:id
+Group Buys	GET /admin/group-buys, PATCH /admin/group-buys/:id/status
+Gift Cards	GET/POST /admin/gift-cards/brands, PATCH /admin/gift-cards/brands/:id, GET/POST /admin/gift-cards, PATCH /admin/gift-cards/:id
+Fee Rules	GET /admin/fee-rules, POST /admin/fee-rules, PATCH /admin/fee-rules/:id
+Wallet Transactions	GET /admin/wallet/transactions
+Cashback Queue	GET /admin/cashback/queue, POST /admin/cashback/release
+Audit Logs	GET /admin/audit-logs
+Payment Settings	new — see Part 2
+
+Rules for every tab:
+
+Every list needs pagination, filtering, and search (matching what the underlying route supports — check each route's actual query params before building filter UI that doesn't map to anything real).
+Every status-changing action (approve/reject/suspend/override) shows a confirmation dialog and requires a reason where the route/table supports one — this writes to audit_logs automatically on the backend, so the frontend doesn't need to log separately, just needs to display the trail.
+Every tab needs a loading skeleton and an empty state.
+Part 4 — Merchant-Parity Admin Access (NEW backend + frontend)
+
+Goal: From the admin panel, an admin can open any merchant's store and perform the same actions that merchant could perform in /merchant — manage products, view/update orders, manage that merchant's coupons/deals/group buy campaigns — without needing to log in as that merchant.
+
+This is for support, moderation, and emergency intervention (e.g., a merchant is unreachable and an order needs updating, or a listing needs correcting after a policy violation).
+
+Backend (new — the key gap)
+
+The current merchant routes (/merchant/store, /merchant/products, /merchant/orders, etc.) are scoped to the authenticated merchant's own merchant_stores record. Add admin-scoped equivalents that take an explicit store ID, e.g.:
+
+GET /admin/stores/:storeId/products / POST / PATCH /:id / DELETE /:id
+GET /admin/stores/:storeId/orders / PATCH /:id/status
+GET /admin/stores/:storeId/coupons (admin can approve/edit directly, bypassing the merchant-submits-admin-approves flow when acting on their behalf)
+GET /admin/stores/:storeId/summary (same dashboard data the merchant sees for their own store)
+
+Every one of these must write to audit_logs with the admin's ID and the store ID acted on — this is admin acting on another party's data, so the audit trail matters even more here than elsewhere.
+
+Do not implement this as "admin logs in as merchant" (session swapping) — implement it as admin-scoped routes with their own permission check (requireAdmin + explicit store ID), so the action is clearly attributable to the admin, not disguised as the merchant's own action.
+
+Frontend (new)
+From the Merchants tab, each merchant row gets a "Manage Store" action that opens a read/write view mirroring the Merchant Dashboard's own UI (Products, Orders, Coupons, Deals, Group Buy, Summary) but scoped to that store, reusing the merchant panel's components where possible with the storeId passed in as a prop instead of derived from the logged-in user.
+Clearly label this view (e.g., a banner: "You are managing [Store Name] as Admin — actions are logged") so it's never ambiguous that the admin is acting on someone else's store.
+Build Order (dependency-safe)
+Dashboard (Part 1) — pure read, lowest risk, immediately useful
+Rebuild existing tabs cleanly on real routes (Part 3) — no new backend, just correct UI
+Payment Settings (Part 2) — new table + routes, isolated feature, high sensitivity (encrypted secrets) so build and test in isolation
+Merchant-Parity Access (Part 4) — largest scope, depends on understanding the existing merchant routes well (Part 3 work will surface that), build last
+Verification Checklist Per Part
+ Build passes, TypeScript strict, zero errors
+ Every new/changed route: authenticated + requireAdmin enforced, tested against a non-admin token (must reject)
+ Payment Settings: secrets never appear in any response body unmasked; audit log entry created on every change
+ Merchant-Parity routes: audit log entry created on every mutation, includes storeId; verified that a merchant's own session cannot hit the /admin/stores/:storeId/... routes
+ Dashboard: no new heavy aggregate query that could slow down under real data volume — check query plans if composing across multiple tables
+ No regression to existing merchant-side /merchant/* routes or UI

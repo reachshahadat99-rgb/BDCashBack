@@ -125,10 +125,17 @@ async function settleExpiredCampaign(dealId: string): Promise<boolean> {
           })
           .where(eq(groupBuyOrdersTable.id, order.id));
 
-        // Issue pending cashback — customer receives 50 % of the cashback
+        // Release cashback directly to availableCashback — group buy skips the
+        // 30-day return window because the campaign only settles after delivery
+        // has been confirmed at scale (success = group met minimum).
+        // Use the snapshotted amount if present; fall back to live calculation
+        // for orders created before the snapshot column was added.
         const totalAmount = money(order.totalAmount);
         const cashbackPercent = money(deal.cashbackPercent);
-        const cashback = Math.round((totalAmount * cashbackPercent) / 100 / 2);
+        const cashback =
+          order.cashbackAmountEntitled != null
+            ? money(order.cashbackAmountEntitled)
+            : Math.round((totalAmount * cashbackPercent) / 100 / 2);
 
         if (cashback > 0) {
           const now = new Date();
@@ -137,9 +144,9 @@ async function settleExpiredCampaign(dealId: string): Promise<boolean> {
           await tx.insert(walletTransactionsTable).values({
             id: nanoid(),
             userId: order.customerId,
-            type: "cashback_pending",
+            type: "cashback_released",
             amount: String(cashback),
-            description: `Group buy cashback pending — ${deal.title}`,
+            description: `Group buy cashback — ${deal.title}`,
             referenceId: dealId,
             referenceType: "group_buy",
           });
@@ -147,7 +154,7 @@ async function settleExpiredCampaign(dealId: string): Promise<boolean> {
           await tx
             .update(walletSnapshotsTable)
             .set({
-              pendingCashback: sql`${walletSnapshotsTable.pendingCashback} + ${cashback}`,
+              availableCashback: sql`${walletSnapshotsTable.availableCashback} + ${cashback}`,
               updatedAt: now,
             })
             .where(eq(walletSnapshotsTable.id, order.customerId));

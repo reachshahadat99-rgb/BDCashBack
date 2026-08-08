@@ -169,6 +169,30 @@ export const auditLogsTable = pgTable(
   }),
 );
 
+// ---------------------------------------------------------------------------
+// Payment Gateway Settings
+// ---------------------------------------------------------------------------
+
+/** Platform-level payment gateway configuration managed by admin. */
+export const paymentGatewaySettingsTable = pgTable("payment_gateway_settings", {
+  /** Slug-based PK: "sslcommerz" | "bkash" | "nagad" | "rocket" */
+  id: text("id").primaryKey(),
+  gatewayName: text("gateway_name").notNull(),
+  enabled: boolean("enabled").notNull().default(false),
+  /** "sandbox" | "live" */
+  mode: text("mode").notNull().default("sandbox"),
+  /** Merchant/Store ID or API username (not secret, returned in GET) */
+  merchantId: text("merchant_id").notNull().default(""),
+  /** Secret key stored AES-256-CBC encrypted — NEVER returned plaintext */
+  secretKeyEncrypted: text("secret_key_encrypted").notNull().default(""),
+  /** Last 4 chars for display: ••••1234 */
+  secretKeyLastFour: text("secret_key_last_four").notNull().default(""),
+  updatedBy: text("updated_by").notNull().default(""),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type PaymentGatewaySetting = typeof paymentGatewaySettingsTable.$inferSelect;
+
 export const insertAdminUserSchema = createInsertSchema(adminUsersTable).omit({
   createdAt: true,
 });

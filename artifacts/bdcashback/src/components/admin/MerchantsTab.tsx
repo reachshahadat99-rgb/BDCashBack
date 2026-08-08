@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,16 +11,35 @@ import {
 } from "@workspace/api-client-react";
 import { fmtDate } from "@/lib/utils";
 import { statusBadge } from "./admin-helpers";
+import AdminStoreView from "./AdminStoreView";
+import { Store } from "lucide-react";
+
+interface ManagedStore {
+  id: string;
+  name: string;
+}
 
 export default function MerchantsTab() {
   const queryClient = useQueryClient();
   const { data, isLoading } = useListAdminMerchants();
   const update = useUpdateAdminMerchant();
+  const [managing, setManaging] = useState<ManagedStore | null>(null);
 
   function setStatus(id: string, status: "active" | "suspended") {
     update.mutate(
       { id, data: { status } },
       { onSuccess: () => void queryClient.invalidateQueries({ queryKey: getListAdminMerchantsQueryKey() }) },
+    );
+  }
+
+  // Show store management view when selected
+  if (managing) {
+    return (
+      <AdminStoreView
+        storeId={managing.id}
+        storeName={managing.name}
+        onBack={() => setManaging(null)}
+      />
     );
   }
 
@@ -38,7 +58,15 @@ export default function MerchantsTab() {
               <TableCell>{m.productCount}</TableCell>
               <TableCell>{fmtDate(m.createdAt)}</TableCell>
               <TableCell>{statusBadge(m.status)}</TableCell>
-              <TableCell className="text-right">
+              <TableCell className="text-right space-x-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1"
+                  onClick={() => setManaging({ id: m.id, name: m.name })}
+                >
+                  <Store className="w-3.5 h-3.5" /> Manage Store
+                </Button>
                 {m.status === "suspended" ? (
                   <Button size="sm" variant="outline" onClick={() => setStatus(m.id, "active")} disabled={update.isPending}>Reinstate</Button>
                 ) : (

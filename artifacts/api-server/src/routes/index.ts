@@ -7,9 +7,12 @@ import couponsRouter from "./coupons";
 import promoDealsRouter from "./promo-deals";
 import giftCardsRouter from "./gift-cards";
 import adminRouter from "./admin";
+import adminPaymentSettingsRouter from "./admin-payment-settings";
+import adminStoresRouter from "./admin-stores";
 import cartRouter from "./cart";
 import ordersRouter from "./orders";
 import walletRouter from "./wallet";
+import watchEarnRouter from "./watch-earn";
 
 const router: IRouter = Router();
 
@@ -24,5 +27,8 @@ router.use(couponsRouter);
 router.use(promoDealsRouter);
 router.use(giftCardsRouter);
 router.use(adminRouter);
+router.use(adminPaymentSettingsRouter);
+router.use(adminStoresRouter);
+router.use(watchEarnRouter);
 
 export default router;

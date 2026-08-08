@@ -15,6 +15,8 @@ import GroupBuy from './pages/GroupBuy';
 import GiftCards from './pages/GiftCards';
 import MerchantPromotions from './pages/MerchantPromotions';
 import Admin from './pages/Admin';
+import CustomerSignup from './pages/CustomerSignup';
+import MerchantSignup from './pages/MerchantSignup';
 import { useEffect, useRef } from 'react';
 
 const queryClient = new QueryClient({
@@ -106,6 +108,14 @@ function HomeRoute() {
   return <Home />;
 }
 
+function CustomerSignupPage() {
+  return <CustomerSignup />;
+}
+
+function MerchantSignupPage() {
+  return <MerchantSignup />;
+}
+
 function SignInPage() {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 py-8">
@@ -195,6 +205,8 @@ function AppContent() {
     <Switch>
       <Route path="/sign-in/*?" component={SignInPage} />
       <Route path="/sign-up/*?" component={SignUpPage} />
+      <Route path="/signup/customer/*?" component={CustomerSignupPage} />
+      <Route path="/signup/merchant" component={MerchantSignupPage} />
       <Route>
         <Shell>
           <AppRoutes />

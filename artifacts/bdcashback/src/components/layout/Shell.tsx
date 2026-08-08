@@ -115,7 +115,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             </Link>
           </nav>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-primary">
               <Bell className="w-5 h-5" />
             </Button>
@@ -136,9 +136,17 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 </button>
               </div>
             ) : (
-              <Link href="/sign-in" className="inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-bold ring-offset-background transition-all bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm h-9 px-4">
-                Sign In
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link href="/sign-in" className="inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-semibold h-9 px-4 hover:bg-accent transition-colors text-foreground border border-border">
+                  Sign In
+                </Link>
+                <Link href="/signup/customer" className="inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-bold h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all">
+                  Sign Up
+                </Link>
+                <Link href="/signup/merchant" className="inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-semibold h-9 px-4 border border-primary text-primary hover:bg-primary/5 transition-all">
+                  Sell on BDCashBack
+                </Link>
+              </div>
             )}
           </div>
         </div>
