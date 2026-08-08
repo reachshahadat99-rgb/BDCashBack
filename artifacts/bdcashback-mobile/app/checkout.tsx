@@ -24,6 +24,7 @@ import { FONT_BOLD, FONT_MEDIUM, FONT_REGULAR, FONT_SEMIBOLD } from '@/constants
 import { useCheckoutDraft, type DeliveryAddress } from '@/hooks/useCheckoutDraft';
 import { scheduleLocalNotification } from '@/hooks/usePushNotifications';
 import { isAddressValid, isNameValid, isPhoneValid } from '@/utils/checkoutValidation';
+import { handleCheckoutError } from '@/utils/checkoutErrorHandler';
 
 type Step = 0 | 1 | 2 | 3;
 const STEP_LABELS: Record<Step, string> = {
@@ -161,22 +162,13 @@ export default function CheckoutScreen() {
           );
         },
         onError: (err: unknown) => {
-          if (err instanceof RequestTimeoutError) {
-            Alert.alert(
-              'Request Timed Out',
-              'The server took too long to respond. Please check your connection and try again.',
-              [
-                { text: 'Try Again', onPress: handlePlaceOrder },
-                { text: 'Cancel', style: 'cancel' },
-              ],
-            );
-            return;
-          }
-          const msg =
-            err && typeof err === 'object' && 'error' in err
-              ? String((err as any).error)
-              : 'Could not complete checkout.';
-          Alert.alert('Checkout Failed', msg);
+          // Wrap Alert.alert to bridge the generic AlertFn signature with
+          // React Native's AlertButton type (which has a stricter style union).
+          handleCheckoutError(
+            err,
+            (title, msg, btns) => Alert.alert(title, msg, btns as any),
+            handlePlaceOrder,
+          );
         },
       },
     );

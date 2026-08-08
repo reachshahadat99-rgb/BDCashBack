@@ -22,8 +22,10 @@ import {
   clearCart,
   checkout,
   setBaseUrl,
+  RequestTimeoutError,
 } from '@workspace/api-client-react';
 import { isAddressValid, isNameValid, isPhoneValid } from '../utils/checkoutValidation';
+import { handleCheckoutError } from '../utils/checkoutErrorHandler';
 
 // ─── fixtures ────────────────────────────────────────────────────────────────
 
@@ -542,6 +544,145 @@ describe('checkout — server-side phone validation (422 rejection)', () => {
       deliveryAddress: { ...BASE_ADDRESS, phone: '+880 17-000-00000' },
     });
     expect(result.id).toBe('order-99');
+  });
+});
+
+// ─── checkout timeout ─────────────────────────────────────────────────────────
+//
+// These tests verify the 15-second checkout timeout actually fires and surfaces
+// the correct error so users are never stuck with a frozen spinner.
+//
+// Strategy: mock global.fetch to hang forever but honour the AbortSignal so
+// the promise rejects with an AbortError when the timeout controller fires.
+// Then advance Jest fake timers past the timeout window and assert the correct
+// error type is thrown.
+
+describe('checkout — RequestTimeoutError is thrown when the server hangs', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    // Replace the spy set up in the outer beforeEach with a "hanging" fetch
+    // that properly rejects when the AbortController aborts.
+    // Use a plain Error with name 'AbortError' because DOMException is not
+    // available in the Node jest environment used by this test suite.
+    fetchMock.mockImplementation((_input: RequestInfo | URL, init?: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        const signal = init?.signal as AbortSignal | undefined;
+        if (signal) {
+          const abortErr = (): Error =>
+            Object.assign(new Error('The operation was aborted.'), { name: 'AbortError' });
+          if (signal.aborted) {
+            reject(abortErr());
+            return;
+          }
+          signal.addEventListener('abort', () => reject(abortErr()));
+        }
+        // Without a signal the promise hangs forever — that is intentional.
+      }),
+    );
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('throws RequestTimeoutError when fetch hangs past timeoutMs', async () => {
+    const TIMEOUT_MS = 200;
+
+    const checkoutPromise = checkout(
+      { deliveryAddress: { name: 'Jane', phone: '01700000000', address: '1 Road', city: 'Dhaka' } },
+      { timeoutMs: TIMEOUT_MS },
+    );
+
+    // Advance fake timers past the threshold to trigger the AbortController.
+    jest.advanceTimersByTime(TIMEOUT_MS + 50);
+
+    await expect(checkoutPromise).rejects.toThrow(RequestTimeoutError);
+  });
+
+  it('error name is "RequestTimeoutError" (so instanceof checks in onError work)', async () => {
+    const TIMEOUT_MS = 200;
+
+    const checkoutPromise = checkout({}, { timeoutMs: TIMEOUT_MS });
+    jest.advanceTimersByTime(TIMEOUT_MS + 50);
+
+    let caught: unknown;
+    try {
+      await checkoutPromise;
+    } catch (err) {
+      caught = err;
+    }
+
+    expect(caught).toBeInstanceOf(RequestTimeoutError);
+    expect((caught as RequestTimeoutError).name).toBe('RequestTimeoutError');
+    expect((caught as RequestTimeoutError).timeoutMs).toBe(TIMEOUT_MS);
+    expect((caught as RequestTimeoutError).method).toBe('POST');
+  });
+
+  it('does NOT throw RequestTimeoutError when the server responds in time', async () => {
+    // Switch to a fast-resolving mock for this one case.
+    fetchMock.mockResolvedValueOnce(makeResponse(ORDER));
+
+    const TIMEOUT_MS = 5_000;
+    const result = await checkout(
+      { deliveryAddress: { name: 'Jane', phone: '01700000000', address: '1 Road', city: 'Dhaka' } },
+      { timeoutMs: TIMEOUT_MS },
+    );
+
+    expect(result.id).toBe('order-99');
+  });
+});
+
+// ─── checkout onError handler — "Request Timed Out" alert ────────────────────
+//
+// Verifies that when the checkout mutate call hands RequestTimeoutError to
+// onError (as wired in checkout.tsx), Alert.alert is called with the title
+// "Request Timed Out" and a "Try Again" button — matching the handler in
+// checkout.tsx handlePlaceOrder → onError.
+
+// ─── checkout onError handler — "Request Timed Out" alert with Try Again ─────
+//
+// These tests call the REAL handleCheckoutError function that checkout.tsx
+// wires into useCheckout onError.  A jest.fn() stands in for Alert.alert so
+// the tests stay in @jest-environment node without importing react-native.
+//
+// If the production handler is changed (different title, missing Try Again
+// button, wrong branch), these tests will fail — that is the intent.
+
+describe('checkout onError handler — "Request Timed Out" alert with Try Again', () => {
+  it('calls alertFn with "Request Timed Out" and a "Try Again" button when RequestTimeoutError is received', () => {
+    const alertFn = jest.fn();
+    const tryAgainFn = jest.fn();
+
+    const err = new RequestTimeoutError(15_000, { method: 'POST', url: '/api/checkout' });
+
+    handleCheckoutError(err, alertFn, tryAgainFn);
+
+    expect(alertFn).toHaveBeenCalledTimes(1);
+    expect(alertFn).toHaveBeenCalledWith(
+      'Request Timed Out',
+      expect.stringContaining('too long'),
+      expect.arrayContaining([
+        expect.objectContaining({ text: 'Try Again' }),
+      ]),
+    );
+  });
+
+  it('does NOT show a "Request Timed Out" alert for a plain network error', () => {
+    const alertFn = jest.fn();
+    const err = new Error('network failure');
+
+    handleCheckoutError(err, alertFn, jest.fn());
+
+    expect(alertFn).toHaveBeenCalledWith('Checkout Failed', expect.any(String));
+    expect(alertFn).not.toHaveBeenCalledWith('Request Timed Out', expect.anything(), expect.anything());
+  });
+
+  it('instanceof check correctly distinguishes RequestTimeoutError from plain Error', () => {
+    const timeout = new RequestTimeoutError(15_000, { method: 'POST', url: '/api/checkout' });
+    const plain = new Error('network failure');
+
+    expect(timeout instanceof RequestTimeoutError).toBe(true);
+    expect(plain instanceof RequestTimeoutError).toBe(false);
   });
 });
 
