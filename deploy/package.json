@@ -1,0 +1,9 @@
+{
+  "name": "bdcashback-api-deploy",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node ../artifacts/api-server/dist/index.mjs"
+  },
+  "dependencies": {}
+}
