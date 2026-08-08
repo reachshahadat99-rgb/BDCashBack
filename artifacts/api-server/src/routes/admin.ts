@@ -1,5 +1,4 @@
 import { Router, type IRouter, type RequestHandler } from "express";
-import { getAuth } from "@clerk/express";
 import {
   ActionAdminOrderBody,
   ActionAdminOrderParams,

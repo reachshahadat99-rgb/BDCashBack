@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useGetMarketplaceSummary, useListGroupBuyDeals, useListGiftCardBrands } from "@workspace/api-client-react";
-import { useAuth } from "@clerk/react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";

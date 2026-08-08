@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { useClerk, useUser } from "@clerk/react";
+import { useUser, useClerk } from "@/contexts/AuthContext";
 import { Home, Search, Wallet, User, Bell, Store, Ticket, Flame, Percent, Users, Gift, ChevronDown, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handle(e: MouseEvent) {
       if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
@@ -46,7 +45,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener("mousedown", handle);
   }, []);
 
-  // Close dropdown on navigation
   useEffect(() => { setMoreOpen(false); }, [location]);
 
   return (

@@ -21,3 +21,4 @@ export * from "./marketplace";
 export * from "./platform";
 export * from "./commerce";
 export * from "./watch-earn";
+export * from "./auth";

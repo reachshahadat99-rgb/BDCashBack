@@ -1,7 +1,4 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ClerkProvider, SignIn, SignUp, UserProfile, useAuth, useClerk } from '@clerk/react';
-import { publishableKeyFromHost } from '@clerk/react/internal';
-import { shadcn } from '@clerk/themes';
 import { Redirect, Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 import { Shell } from './components/layout/Shell';
 import Home from './pages/Home';
@@ -19,7 +16,9 @@ import CustomerSignup from './pages/CustomerSignup';
 import MerchantSignup from './pages/MerchantSignup';
 import Orders from './pages/Orders';
 import Account from './pages/Account';
-import { useEffect, useRef } from 'react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { SignInForm } from './components/auth/SignInForm';
+import { SignUpForm } from './components/auth/SignUpForm';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,70 +30,6 @@ const queryClient = new QueryClient({
 });
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
-const clerkPubKey = publishableKeyFromHost(
-  window.location.hostname,
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
-);
-const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
-
-if (!clerkPubKey) {
-  throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY in the app environment.');
-}
-
-function stripBase(path: string) {
-  return basePath && path.startsWith(basePath)
-    ? path.slice(basePath.length) || '/'
-    : path;
-}
-
-const clerkAppearance = {
-  theme: shadcn,
-  cssLayerName: 'clerk',
-  options: {
-    logoPlacement: 'inside' as const,
-    logoLinkUrl: basePath || '/',
-    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
-  },
-  variables: {
-    colorPrimary: '#119C89',
-    colorForeground: '#0F172A',
-    colorMutedForeground: '#64748B',
-    colorDanger: '#DC2626',
-    colorBackground: '#FFFFFF',
-    colorInput: '#F8FAFC',
-    colorInputForeground: '#0F172A',
-    colorNeutral: '#E2E8F0',
-    fontFamily: 'Plus Jakarta Sans',
-    borderRadius: '0.75rem',
-  },
-  elements: {
-    rootBox: 'w-full flex justify-center',
-    cardBox: 'bg-white rounded-2xl w-[440px] max-w-full overflow-hidden shadow-xl',
-    card: '!shadow-none !border-0 !bg-transparent !rounded-none',
-    footer: '!shadow-none !border-0 !bg-transparent !rounded-none',
-    headerTitle: 'text-slate-900',
-    headerSubtitle: 'text-slate-500',
-    socialButtonsBlockButtonText: 'text-slate-700',
-    formFieldLabel: 'text-slate-700',
-    footerActionLink: 'text-teal-700',
-    footerActionText: 'text-slate-500',
-    dividerText: 'text-slate-400',
-    identityPreviewEditButton: 'text-teal-700',
-    formFieldSuccessText: 'text-teal-700',
-    alertText: 'text-red-700',
-    logoBox: 'h-12',
-    logoImage: 'h-12 w-12 rounded-xl',
-    socialButtonsBlockButton: 'border-slate-200 hover:bg-slate-50',
-    formButtonPrimary: 'bg-teal-600 hover:bg-teal-700',
-    formFieldInput: 'border-slate-200 bg-slate-50 focus:border-teal-500',
-    footerAction: 'border-slate-200',
-    dividerLine: 'bg-slate-200',
-    alert: 'border-red-200 bg-red-50',
-    otpCodeFieldInput: 'border-slate-200',
-    formFieldRow: 'gap-2',
-    main: 'p-2',
-  },
-};
 
 function NotFound() {
   return (
@@ -106,26 +41,10 @@ function NotFound() {
   );
 }
 
-function HomeRoute() {
-  return <Home />;
-}
-
-function CustomerSignupPage() {
-  return <CustomerSignup />;
-}
-
-function MerchantSignupPage() {
-  return <MerchantSignup />;
-}
-
 function SignInPage() {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 py-8">
-      <SignIn
-        routing="path"
-        path={`${basePath}/sign-in`}
-        signUpUrl={`${basePath}/sign-up`}
-      />
+      <SignInForm redirectUrl="/" />
     </div>
   );
 }
@@ -133,11 +52,7 @@ function SignInPage() {
 function SignUpPage() {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 py-8">
-      <SignUp
-        routing="path"
-        path={`${basePath}/sign-up`}
-        signInUrl={`${basePath}/sign-in`}
-      />
+      <SignUpForm role="customer" redirectUrl="/" signInUrl="/sign-in" />
     </div>
   );
 }
@@ -162,7 +77,7 @@ function ProfilePage() {
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight">Your account is waiting</h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Sign in to manage your personal details, security settings, and BDCashBack account.
+            Sign in to manage your personal details and BDCashBack account.
           </p>
           <a
             href="/sign-in"
@@ -175,17 +90,14 @@ function ProfilePage() {
     );
   }
 
-  return (
-    <div className="flex min-h-[calc(100dvh-4rem)] items-start justify-center bg-background px-4 py-8">
-      <UserProfile routing="path" path={`${basePath}/profile`} />
-    </div>
-  );
+  // Simple profile page (no Clerk UserProfile widget needed)
+  return <Account />;
 }
 
 function AppRoutes() {
   return (
     <Switch>
-      <Route path="/" component={HomeRoute} />
+      <Route path="/" component={Home} />
       <Route path="/products" component={Products} />
       <Route path="/wallet" component={Wallet} />
       <Route path="/orders" component={Orders} />
@@ -209,8 +121,8 @@ function AppContent() {
     <Switch>
       <Route path="/sign-in/*?" component={SignInPage} />
       <Route path="/sign-up/*?" component={SignUpPage} />
-      <Route path="/signup/customer/*?" component={CustomerSignupPage} />
-      <Route path="/signup/merchant" component={MerchantSignupPage} />
+      <Route path="/signup/customer/*?" component={CustomerSignup} />
+      <Route path="/signup/merchant" component={MerchantSignup} />
       <Route>
         <Shell>
           <AppRoutes />
@@ -220,63 +132,14 @@ function AppContent() {
   );
 }
 
-function ClerkQueryClientCacheInvalidator() {
-  const { addListener } = useClerk();
-  const previousUserId = useRef<string | null | undefined>(undefined);
-
-  useEffect(() => {
-    const unsubscribe = addListener(({ user }) => {
-      const userId = user?.id ?? null;
-      if (previousUserId.current !== undefined && previousUserId.current !== userId) {
-        queryClient.clear();
-      }
-      previousUserId.current = userId;
-    });
-    return unsubscribe;
-  }, [addListener]);
-
-  return null;
-}
-
-function ClerkApp() {
-  const [, setLocation] = useLocation();
-
-  return (
-    <ClerkProvider
-      publishableKey={clerkPubKey}
-      proxyUrl={clerkProxyUrl}
-      appearance={clerkAppearance}
-      signInUrl={`${basePath}/sign-in`}
-      signUpUrl={`${basePath}/sign-up`}
-      localization={{
-        signIn: {
-          start: {
-            title: 'Welcome back',
-            subtitle: 'Sign in to access your BDCashBack account',
-          },
-        },
-        signUp: {
-          start: {
-            title: 'Create your BDCashBack account',
-            subtitle: 'Start earning cashback on every purchase',
-          },
-        },
-      }}
-      routerPush={(to) => setLocation(stripBase(to))}
-      routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
-    >
-      <QueryClientProvider client={queryClient}>
-        <ClerkQueryClientCacheInvalidator />
-        <AppContent />
-      </QueryClientProvider>
-    </ClerkProvider>
-  );
-}
-
 function App() {
   return (
     <WouterRouter base={basePath}>
-      <ClerkApp />
+      <AuthProvider onUserChange={(userId) => { if (userId === null) queryClient.clear(); }}>
+        <QueryClientProvider client={queryClient}>
+          <AppContent />
+        </QueryClientProvider>
+      </AuthProvider>
     </WouterRouter>
   );
 }

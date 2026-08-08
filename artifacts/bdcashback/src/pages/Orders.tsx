@@ -7,7 +7,7 @@ import {
   getGetOrderQueryKey,
 } from "@workspace/api-client-react";
 import type { CustomerOrder } from "@workspace/api-client-react";
-import { useAuth } from "@clerk/react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";

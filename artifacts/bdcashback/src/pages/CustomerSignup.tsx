@@ -1,8 +1,6 @@
-import { SignUp } from "@clerk/react";
 import { Link } from "wouter";
-import { CheckCircle2, Wallet as WalletIcon, ArrowRight, BadgePercent, Banknote, ShoppingBag } from "lucide-react";
-
-const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+import { CheckCircle2, Wallet as WalletIcon, BadgePercent, Banknote, ShoppingBag } from "lucide-react";
+import { SignUpForm } from "@/components/auth/SignUpForm";
 
 const BENEFITS = [
   { icon: ShoppingBag, title: "Shop 1,000+ products", desc: "From verified merchants across all categories." },
@@ -15,12 +13,10 @@ export default function CustomerSignup() {
     <div className="min-h-[100dvh] flex">
       {/* Left: branding panel — hidden on mobile */}
       <div className="hidden lg:flex lg:w-[480px] xl:w-[560px] flex-shrink-0 relative overflow-hidden bg-gradient-to-br from-teal-700 via-teal-600 to-emerald-500 text-white p-10 flex-col justify-between">
-        {/* Decorative blobs */}
         <div className="pointer-events-none absolute -top-32 -right-32 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
         <div className="pointer-events-none absolute -bottom-24 -left-16 w-64 h-64 bg-teal-400/30 rounded-full blur-2xl" />
 
         <div className="relative z-10 space-y-8">
-          {/* Logo */}
           <Link href="/" className="inline-flex items-center gap-2">
             <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
               <WalletIcon className="w-6 h-6 text-white" />
@@ -28,7 +24,6 @@ export default function CustomerSignup() {
             <span className="font-extrabold text-2xl tracking-tight">BDCashBack</span>
           </Link>
 
-          {/* Headline */}
           <div className="space-y-3">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-sm font-semibold">
               ✨ Join 15,000+ smart shoppers
@@ -42,7 +37,6 @@ export default function CustomerSignup() {
             </p>
           </div>
 
-          {/* Benefits */}
           <div className="space-y-5">
             {BENEFITS.map((b) => (
               <div key={b.title} className="flex items-start gap-4">
@@ -58,7 +52,6 @@ export default function CustomerSignup() {
           </div>
         </div>
 
-        {/* Bottom quote */}
         <div className="relative z-10 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 p-5 space-y-2">
           <p className="text-sm text-teal-100 italic">
             "I've earned ৳4,200 cashback in 3 months just by shopping things I was already buying!"
@@ -84,12 +77,7 @@ export default function CustomerSignup() {
         </div>
 
         <div className="w-full max-w-[440px] space-y-4">
-          <SignUp
-            routing="path"
-            path={`${basePath}/signup/customer`}
-            signInUrl={`${basePath}/sign-in`}
-            fallbackRedirectUrl="/"
-          />
+          <SignUpForm role="customer" redirectUrl="/" signInUrl="/sign-in" />
 
           {/* Benefits checklist under form on mobile */}
           <div className="lg:hidden mt-4 space-y-2 px-2">
@@ -99,16 +87,6 @@ export default function CustomerSignup() {
                 {t}
               </div>
             ))}
-          </div>
-
-          {/* Merchant link */}
-          <div className="text-center pt-2">
-            <p className="text-xs text-muted-foreground">
-              Are you a merchant?{" "}
-              <Link href="/signup/merchant" className="text-primary font-semibold hover:underline inline-flex items-center gap-0.5">
-                Apply to sell <ArrowRight className="w-3 h-3" />
-              </Link>
-            </p>
           </div>
         </div>
       </div>

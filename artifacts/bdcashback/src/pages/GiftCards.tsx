@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Gift, ArrowRight, CheckCircle2, Wallet } from "lucide-react";
-import { useAuth } from "@clerk/react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {

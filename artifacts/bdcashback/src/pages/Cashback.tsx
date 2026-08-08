@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Percent, TrendingUp, ArrowRight, Star, ShieldCheck, Wallet, Info } from "lucide-react";
-import { useAuth } from "@clerk/react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useGetMarketplaceSummary } from "@workspace/api-client-react";
 import { formatCurrency } from "@/lib/utils";
 

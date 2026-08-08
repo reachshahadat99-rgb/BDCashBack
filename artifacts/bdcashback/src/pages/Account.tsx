@@ -1,4 +1,4 @@
-import { useUser, useAuth } from "@clerk/react";
+import { useUser, useAuth } from "@/contexts/AuthContext";
 import { useListOrders, useGetWalletSummary, getListOrdersQueryKey } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";

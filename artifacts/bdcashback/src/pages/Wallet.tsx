@@ -6,7 +6,7 @@ import {
 } from "@workspace/api-client-react";
 import type { WalletTransaction } from "@workspace/api-client-react";
 import { Link } from "wouter";
-import { useAuth } from "@clerk/react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
