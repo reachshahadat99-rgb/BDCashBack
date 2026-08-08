@@ -380,6 +380,68 @@ describe('checkout — missing or malformed deliveryAddress', () => {
   });
 });
 
+// ─── server-side phone validation — 422 rejection path ───────────────────────
+//
+// The server validates deliveryAddress.phone with the same rule as the mobile
+// client: digits only, ≥7 digits after stripping formatting chars. These tests
+// verify the client propagates each server 422 as a thrown error.
+
+describe('checkout — server-side phone validation (422 rejection)', () => {
+  const BASE_ADDRESS = {
+    name: 'Jane Doe',
+    address: '123 Main St',
+    city: 'Dhaka',
+  };
+
+  async function expectPhoneRejected(phone: string): Promise<void> {
+    fetchMock.mockResolvedValue(
+      makeResponse(
+        { error: 'deliveryAddress.phone is invalid: must contain at least 7 digits using only digits or formatting characters (spaces, dashes, parentheses, leading +)' },
+        422,
+      ),
+    );
+    await expect(
+      checkout({ deliveryAddress: { ...BASE_ADDRESS, phone } }),
+    ).rejects.toThrow();
+  }
+
+  it('rejects an alphabetic phone ("abc") with 422', async () => {
+    await expectPhoneRejected('abc');
+  });
+
+  it('rejects a mixed alphanumeric phone ("01abc234") with 422', async () => {
+    await expectPhoneRejected('01abc234');
+  });
+
+  it('rejects an empty phone string with 422', async () => {
+    await expectPhoneRejected('');
+  });
+
+  it('rejects a phone that is fewer than 7 digits ("12345") with 422', async () => {
+    await expectPhoneRejected('12345');
+  });
+
+  it('rejects a single-digit phone with 422', async () => {
+    await expectPhoneRejected('1');
+  });
+
+  it('accepts a valid 11-digit phone and does NOT return 422', async () => {
+    fetchMock.mockResolvedValue(makeResponse(ORDER));
+    const result = await checkout({
+      deliveryAddress: { ...BASE_ADDRESS, phone: '01700000000' },
+    });
+    expect(result.id).toBe('order-99');
+  });
+
+  it('accepts a formatted phone with country code and does NOT return 422', async () => {
+    fetchMock.mockResolvedValue(makeResponse(ORDER));
+    const result = await checkout({
+      deliveryAddress: { ...BASE_ADDRESS, phone: '+880 17-000-00000' },
+    });
+    expect(result.id).toBe('order-99');
+  });
+});
+
 describe('cart add → remove → checkout sequence', () => {
   it('can add, remove and checkout in sequence without errors', async () => {
     // Each call needs its own mock response

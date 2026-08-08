@@ -16,6 +16,22 @@ import { requireAuth } from "../middleware/auth";
 
 const router: IRouter = Router();
 
+/**
+ * Returns true when the phone string contains at least 7 digits and only
+ * consists of digits plus common formatting characters (spaces, dashes,
+ * parentheses, leading +). Mirrors the rule enforced client-side in
+ * artifacts/bdcashback-mobile/utils/checkoutValidation.ts.
+ */
+function isPhoneValid(phone: string): boolean {
+  const stripped = phone.trim();
+  if (stripped.length === 0) return false;
+  const digitsOnly = stripped.replace(/[\s\-+()]/g, "");
+  if (digitsOnly.length === 0) return false;
+  if (!/^\d+$/.test(digitsOnly)) return false;
+  if (digitsOnly.length < 7) return false;
+  return true;
+}
+
 // POST /checkout
 router.post("/checkout", requireAuth, async (req, res): Promise<void> => {
   const userId = res.locals.userId as string;
@@ -23,6 +39,11 @@ router.post("/checkout", requireAuth, async (req, res): Promise<void> => {
 
   if (!body.success) {
     res.status(400).json({ error: "deliveryAddress is required and all fields (name, phone, address, city) must be non-empty" });
+    return;
+  }
+
+  if (!isPhoneValid(body.data.deliveryAddress.phone)) {
+    res.status(422).json({ error: "deliveryAddress.phone is invalid: must contain at least 7 digits using only digits or formatting characters (spaces, dashes, parentheses, leading +)" });
     return;
   }
 
