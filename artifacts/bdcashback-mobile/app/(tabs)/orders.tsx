@@ -50,7 +50,7 @@ export default function OrdersScreen() {
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
 
-  const { data: orders, isLoading, refetch } = useListOrders({ query: { enabled: !!isSignedIn, queryKey: getListOrdersQueryKey() } });
+  const { data: orders, isLoading, isError, refetch } = useListOrders({ query: { enabled: !!isSignedIn, queryKey: getListOrdersQueryKey() } });
   const cancelOrder = useCancelOrder();
 
   // Detect order status changes between polls and trigger local notifications
@@ -142,6 +142,25 @@ export default function OrdersScreen() {
     return (
       <View style={[styles.center, { backgroundColor: colors.background, paddingTop: topInset }]}>
         <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View style={[styles.center, { backgroundColor: colors.background, paddingTop: topInset, paddingHorizontal: 32 }]}>
+        <Feather name="wifi-off" size={56} color={colors.mutedForeground} />
+        <Text style={[styles.authTitle, { color: colors.foreground, marginTop: 16 }]}>Couldn't load orders</Text>
+        <Text style={[styles.authSubtitle, { color: colors.mutedForeground, textAlign: 'center' }]}>
+          Check your connection and try again
+        </Text>
+        <TouchableOpacity
+          style={[styles.signInBtn, { backgroundColor: colors.primary, marginTop: 16 }]}
+          onPress={() => refetch()}
+          activeOpacity={0.85}
+        >
+          <Text style={[styles.signInBtnText, { color: colors.primaryForeground }]}>Try again</Text>
+        </TouchableOpacity>
       </View>
     );
   }

@@ -47,9 +47,9 @@ export default function WalletScreen() {
   const [accountNumber, setAccountNumber] = useState('');
   const [notes, setNotes] = useState('');
 
-  const { data: wallet, isLoading: walletLoading, refetch: refetchWallet } =
+  const { data: wallet, isLoading: walletLoading, isError: walletError, refetch: refetchWallet } =
     useGetWalletSummary({ query: { enabled: !!isSignedIn, queryKey: getGetWalletSummaryQueryKey() } });
-  const { data: txs, isLoading: txLoading, refetch: refetchTxs } =
+  const { data: txs, isLoading: txLoading, isError: txError, refetch: refetchTxs } =
     useListWalletTransactions(undefined, { query: { enabled: !!isSignedIn, queryKey: getListWalletTransactionsQueryKey() } });
   const withdrawal = useRequestWithdrawal();
 
@@ -127,6 +127,25 @@ export default function WalletScreen() {
     return (
       <View style={[styles.center, { backgroundColor: colors.background, paddingTop: topInset }]}>
         <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (walletError) {
+    return (
+      <View style={[styles.center, { backgroundColor: colors.background, paddingTop: topInset, paddingHorizontal: 32 }]}>
+        <Feather name="wifi-off" size={56} color={colors.mutedForeground} />
+        <Text style={[styles.authTitle, { color: colors.foreground, marginTop: 16 }]}>Couldn't load wallet</Text>
+        <Text style={[styles.authSubtitle, { color: colors.mutedForeground, textAlign: 'center' }]}>
+          Check your connection and try again
+        </Text>
+        <TouchableOpacity
+          style={[styles.signInBtn, { backgroundColor: colors.primary, marginTop: 16 }]}
+          onPress={() => { refetchWallet(); refetchTxs(); }}
+          activeOpacity={0.85}
+        >
+          <Text style={[styles.signInBtnText, { color: colors.primaryForeground }]}>Try again</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -246,6 +265,18 @@ export default function WalletScreen() {
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Transactions</Text>
         {txLoading ? (
           <ActivityIndicator color={colors.primary} style={{ marginTop: 16 }} />
+        ) : txError ? (
+          <View style={[styles.emptyTx, { gap: 12 }]}>
+            <Feather name="wifi-off" size={32} color={colors.mutedForeground} />
+            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Couldn't load transactions</Text>
+            <TouchableOpacity
+              style={[styles.signInBtn, { backgroundColor: colors.primary }]}
+              onPress={() => refetchTxs()}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.signInBtnText, { color: colors.primaryForeground }]}>Try again</Text>
+            </TouchableOpacity>
+          </View>
         ) : (txs?.length ?? 0) === 0 ? (
           <View style={styles.emptyTx}>
             <Feather name="activity" size={32} color={colors.mutedForeground} />
