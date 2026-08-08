@@ -22,7 +22,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { FONT_BOLD, FONT_MEDIUM, FONT_REGULAR, FONT_SEMIBOLD } from '@/constants/fonts';
 import { useCheckoutDraft, type DeliveryAddress } from '@/hooks/useCheckoutDraft';
 import { scheduleLocalNotification } from '@/hooks/usePushNotifications';
-import { isAddressValid } from '@/utils/checkoutValidation';
+import { isAddressValid, isPhoneValid } from '@/utils/checkoutValidation';
 
 type Step = 0 | 1 | 2 | 3;
 const STEP_LABELS: Record<Step, string> = {
@@ -78,12 +78,16 @@ export default function CheckoutScreen() {
 
   const handleNextFromAddress = useCallback(() => {
     if (!addressValid) {
-      Alert.alert('Missing Details', 'Please fill in all address fields.');
+      if (!isPhoneValid(draft.address.phone)) {
+        Alert.alert('Invalid Phone', 'Please enter a valid phone number (digits only, at least 7 digits).');
+      } else {
+        Alert.alert('Missing Details', 'Please fill in all address fields.');
+      }
       return;
     }
     Haptics.selectionAsync();
     setStep(1);
-  }, [addressValid]);
+  }, [addressValid, draft.address.phone]);
 
   const handleNextFromPayment = useCallback(() => {
     Haptics.selectionAsync();
@@ -319,18 +323,34 @@ function AddressStep({
   colors: ReturnType<typeof import('@/hooks/useColors').useColors>;
   styles: ReturnType<typeof makeStyles>;
 }) {
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  const phoneError = phoneTouched && !isPhoneValid(address.phone)
+    ? 'Enter a valid phone number (digits only, at least 7 digits)'
+    : null;
+
   const field = (key: keyof DeliveryAddress, label: string, placeholder: string, keyboardType?: 'default' | 'phone-pad') => (
     <View style={styles.fieldGroup} key={key}>
       <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>{label}</Text>
       <TextInput
-        style={[styles.fieldInput, { backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.border }]}
+        style={[
+          styles.fieldInput,
+          {
+            backgroundColor: colors.muted,
+            color: colors.foreground,
+            borderColor: key === 'phone' && phoneError ? colors.destructive : colors.border,
+          },
+        ]}
         placeholder={placeholder}
         placeholderTextColor={colors.mutedForeground}
         value={address[key]}
         onChangeText={(v) => onChange({ ...address, [key]: v })}
+        onBlur={key === 'phone' ? () => setPhoneTouched(true) : undefined}
         keyboardType={keyboardType ?? 'default'}
         returnKeyType="next"
       />
+      {key === 'phone' && phoneError && (
+        <Text style={[styles.fieldError, { color: colors.destructive }]}>{phoneError}</Text>
+      )}
     </View>
   );
 
@@ -610,6 +630,7 @@ function makeStyles(colors: ReturnType<typeof import('@/hooks/useColors').useCol
       height: 48, borderRadius: colors.radius, borderWidth: 1,
       paddingHorizontal: 14, fontSize: 15, fontFamily: FONT_REGULAR,
     },
+    fieldError: { fontSize: 12, fontFamily: FONT_REGULAR, marginTop: 4 },
 
     // Payment options
     paymentOption: {

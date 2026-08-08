@@ -23,7 +23,7 @@ import {
   checkout,
   setBaseUrl,
 } from '@workspace/api-client-react';
-import { isAddressValid } from '../utils/checkoutValidation';
+import { isAddressValid, isPhoneValid } from '../utils/checkoutValidation';
 
 // ─── fixtures ────────────────────────────────────────────────────────────────
 
@@ -268,6 +268,85 @@ describe('isAddressValid', () => {
 
   it('blocks submission when all fields are empty', () => {
     expect(isAddressValid({ name: '', phone: '', address: '', city: '' })).toBe(false);
+  });
+});
+
+// ─── phone validation (pure-function tests, no React) ────────────────────────
+
+describe('isPhoneValid', () => {
+  // valid inputs
+  it('accepts a standard 11-digit BD mobile number', () => {
+    expect(isPhoneValid('01700000000')).toBe(true);
+  });
+
+  it('accepts a number with a leading + country code', () => {
+    expect(isPhoneValid('+8801700000000')).toBe(true);
+  });
+
+  it('accepts a number with spaces and dashes as formatting', () => {
+    expect(isPhoneValid('+880 17-000-00000')).toBe(true);
+  });
+
+  it('accepts a 7-digit local number (minimum accepted length)', () => {
+    expect(isPhoneValid('1234567')).toBe(true);
+  });
+
+  // invalid inputs
+  it('rejects an empty string', () => {
+    expect(isPhoneValid('')).toBe(false);
+  });
+
+  it('rejects a whitespace-only string', () => {
+    expect(isPhoneValid('   ')).toBe(false);
+  });
+
+  it('rejects alphabetic text like "abc"', () => {
+    expect(isPhoneValid('abc')).toBe(false);
+  });
+
+  it('rejects a mix of letters and digits like "01abc234"', () => {
+    expect(isPhoneValid('01abc234')).toBe(false);
+  });
+
+  it('rejects a single digit', () => {
+    expect(isPhoneValid('1')).toBe(false);
+  });
+
+  it('rejects a too-short numeric string (under 7 digits)', () => {
+    expect(isPhoneValid('12345')).toBe(false);
+  });
+
+  it('rejects a number with exactly 6 digits (one below threshold)', () => {
+    expect(isPhoneValid('123456')).toBe(false);
+  });
+});
+
+describe('isAddressValid — phone format enforcement', () => {
+  const FULL_ADDRESS = {
+    name: 'Jane Doe',
+    phone: '01700000000',
+    address: '123 Main St',
+    city: 'Dhaka',
+  };
+
+  it('rejects a non-numeric phone like "abc"', () => {
+    expect(isAddressValid({ ...FULL_ADDRESS, phone: 'abc' })).toBe(false);
+  });
+
+  it('rejects a single-digit phone', () => {
+    expect(isAddressValid({ ...FULL_ADDRESS, phone: '1' })).toBe(false);
+  });
+
+  it('rejects a too-short phone with only 5 digits', () => {
+    expect(isAddressValid({ ...FULL_ADDRESS, phone: '12345' })).toBe(false);
+  });
+
+  it('rejects a phone that is whitespace only', () => {
+    expect(isAddressValid({ ...FULL_ADDRESS, phone: '   ' })).toBe(false);
+  });
+
+  it('accepts a valid 11-digit phone', () => {
+    expect(isAddressValid({ ...FULL_ADDRESS, phone: '01700000000' })).toBe(true);
   });
 });
 
