@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   ActivityIndicator, RefreshControl, Platform, Alert,
@@ -17,6 +17,17 @@ import {
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { FONT_BOLD, FONT_MEDIUM, FONT_REGULAR, FONT_SEMIBOLD } from '@/constants/fonts';
+import { scheduleLocalNotification } from '@/hooks/usePushNotifications';
+
+const STATUS_LABELS: Record<string, string> = {
+  paid: 'Paid',
+  processing: 'Processing',
+  shipped: 'Shipped',
+  delivered: 'Delivered',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  refunded: 'Refunded',
+};
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   pending: { bg: '#FEF3C7', text: '#92400E' },
@@ -41,6 +52,31 @@ export default function OrdersScreen() {
 
   const { data: orders, isLoading, refetch } = useListOrders({ query: { enabled: !!isSignedIn, queryKey: getListOrdersQueryKey() } });
   const cancelOrder = useCancelOrder();
+
+  // Detect order status changes between polls and trigger local notifications
+  const prevStatusMapRef = useRef<Record<string, string>>({});
+  useEffect(() => {
+    if (!orders?.length) return;
+    const prev = prevStatusMapRef.current;
+    const changed: Array<{ id: string; status: string }> = [];
+    for (const order of orders) {
+      const prevStatus = prev[order.id];
+      if (prevStatus && prevStatus !== order.status) {
+        changed.push({ id: order.id, status: order.status });
+      }
+    }
+    // Update the ref for next comparison
+    prevStatusMapRef.current = Object.fromEntries(orders.map((o) => [o.id, o.status]));
+
+    // Fire a local notification for each changed order
+    for (const { id, status } of changed) {
+      const label = STATUS_LABELS[status] ?? status;
+      scheduleLocalNotification(
+        `Order Update`,
+        `Order #${id.slice(-6).toUpperCase()} is now ${label}.`,
+      );
+    }
+  }, [orders]);
 
   const topInset = Platform.OS === 'web' ? 67 : insets.top;
   const styles = makeStyles(colors);

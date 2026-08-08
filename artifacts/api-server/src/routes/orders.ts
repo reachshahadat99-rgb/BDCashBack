@@ -21,9 +21,10 @@ router.post("/checkout", requireAuth, async (req, res): Promise<void> => {
   const userId = res.locals.userId as string;
   const body = CheckoutBody.safeParse(req.body ?? {});
   const couponCode = body.success ? (body.data.couponCode ?? undefined) : undefined;
+  const deliveryAddress = body.success ? (body.data.deliveryAddress ?? undefined) : undefined;
 
   try {
-    const result = await checkout(userId, couponCode);
+    const result = await checkout(userId, couponCode, deliveryAddress);
     res.status(201).json(CheckoutResponse.parse(result.order));
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Checkout failed";

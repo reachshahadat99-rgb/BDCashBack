@@ -16,6 +16,7 @@ import {
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { setBaseUrl, setAuthTokenGetter } from '@workspace/api-client-react';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 // Set the API base URL at module level — Expo bundles run outside the web proxy.
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
@@ -32,7 +33,7 @@ const proxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
 
 /** Sets the bearer-token getter and clears the query cache on user changes. */
 function AuthTokenSetter() {
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
   const { user } = useUser();
 
   // Wire bearer token for every API call
@@ -46,6 +47,9 @@ function AuthTokenSetter() {
   useEffect(() => {
     queryClient.clear();
   }, [userId]);
+
+  // Register for push notifications when signed in
+  usePushNotifications(!!isSignedIn);
 
   return null;
 }
@@ -62,6 +66,10 @@ function RootLayoutNav() {
       <Stack.Screen
         name="group-buy/[id]"
         options={{ headerShown: true, headerTitle: 'Group Buy', headerBackTitle: 'Deals', presentation: 'card' }}
+      />
+      <Stack.Screen
+        name="checkout"
+        options={{ headerShown: false, presentation: 'modal', gestureEnabled: false }}
       />
     </Stack>
   );

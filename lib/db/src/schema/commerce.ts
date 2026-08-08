@@ -72,6 +72,8 @@ export const customerOrdersTable = pgTable(
     /** Code of the coupon applied at checkout, null if none. */
     couponCode: text("coupon_code"),
     itemsCount: integer("items_count").notNull().default(1),
+    /** JSON-serialised delivery address captured at checkout. */
+    deliveryAddress: text("delivery_address"),
     deliveredAt: timestamp("delivered_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

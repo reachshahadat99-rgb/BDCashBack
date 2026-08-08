@@ -108,9 +108,18 @@ export interface UpdateCartItemRequest {
   quantity: number;
 }
 
+export interface DeliveryAddress {
+  name: string;
+  phone: string;
+  address: string;
+  city: string;
+}
+
 export interface CheckoutRequest {
   /** Optional coupon code to apply at checkout */
   couponCode?: string;
+  /** Delivery address captured during checkout */
+  deliveryAddress?: DeliveryAddress;
 }
 
 export interface CustomerOrder {

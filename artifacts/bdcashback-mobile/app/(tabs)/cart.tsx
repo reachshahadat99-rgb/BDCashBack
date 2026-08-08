@@ -16,14 +16,13 @@ import {
   useUpdateCartItem,
   useRemoveCartItem,
   useClearCart,
-  useCheckout,
   useValidateCoupon,
   getGetCartQueryKey,
-  getListOrdersQueryKey,
   type CartItem,
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { FONT_BOLD, FONT_MEDIUM, FONT_REGULAR, FONT_SEMIBOLD } from '@/constants/fonts';
+import { useCheckoutDraft } from '@/hooks/useCheckoutDraft';
 
 export default function CartScreen() {
   const colors = useColors();
@@ -35,12 +34,12 @@ export default function CartScreen() {
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const { hasDraft } = useCheckoutDraft();
 
   const { data: cart, isLoading, refetch } = useGetCart({ query: { enabled: !!isSignedIn, queryKey: getGetCartQueryKey() } });
   const updateItem = useUpdateCartItem();
   const removeItem = useRemoveCartItem();
   const clearCart = useClearCart();
-  const checkout = useCheckout();
   const validateCoupon = useValidateCoupon();
 
   const topInset = Platform.OS === 'web' ? 67 : insets.top;
@@ -95,32 +94,16 @@ export default function CartScreen() {
   const handleCheckout = useCallback(() => {
     if (!cart?.items.length) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    checkout.mutate(
-      { data: appliedCoupon ? { couponCode: appliedCoupon } : undefined },
-      {
-        onSuccess: (order) => {
-          queryClient.invalidateQueries({ queryKey: getGetCartQueryKey() });
-          queryClient.invalidateQueries({ queryKey: getListOrdersQueryKey() });
-          setAppliedCoupon(null);
-          setCouponDiscount(0);
-          setCouponCode('');
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          Alert.alert(
-            '🎉 Order Placed!',
-            `Order #${order.id.slice(-6).toUpperCase()} confirmed. You'll earn ৳${order.cashbackAmount.toFixed(2)} cashback.`,
-            [{ text: 'View Orders', onPress: () => router.push('/(tabs)/orders') }, { text: 'OK' }],
-          );
-        },
-        onError: (err: unknown) => {
-          const msg =
-            err && typeof err === 'object' && 'error' in err && typeof (err as any).error === 'string'
-              ? (err as any).error
-              : 'Could not complete checkout.';
-          Alert.alert('Checkout Failed', msg);
-        },
+    // Navigate to the multi-step checkout screen, passing the coupon state so
+    // the review step can pre-populate it.
+    router.push({
+      pathname: '/checkout',
+      params: {
+        couponCode: appliedCoupon ?? '',
+        couponDiscount: String(couponDiscount),
       },
-    );
-  }, [cart, appliedCoupon, checkout, queryClient, router]);
+    });
+  }, [cart, appliedCoupon, couponDiscount, router]);
 
   if (!isSignedIn) {
     return (
@@ -273,23 +256,26 @@ export default function CartScreen() {
               <Text style={[styles.totalValue, { color: colors.foreground }]}>৳{finalTotal.toLocaleString()}</Text>
             </View>
 
+            {hasDraft && (
+              <TouchableOpacity
+                style={[styles.resumeBanner, { backgroundColor: colors.primary + '18', borderColor: colors.primary + '40' }]}
+                onPress={handleCheckout}
+                activeOpacity={0.85}
+              >
+                <Feather name="clock" size={14} color={colors.primary} />
+                <Text style={[styles.resumeText, { color: colors.primary }]}>Resume checkout — address already saved</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
-              style={[styles.checkoutBtn, { backgroundColor: checkout.isPending ? colors.mutedForeground : colors.primary }]}
+              style={[styles.checkoutBtn, { backgroundColor: colors.primary }]}
               onPress={handleCheckout}
-              disabled={checkout.isPending || !items.length}
+              disabled={!items.length}
               activeOpacity={0.85}
             >
-              {checkout.isPending
-                ? <ActivityIndicator color={colors.primaryForeground} />
-                : (
-                  <>
-                    <Feather name="check-circle" size={18} color={colors.primaryForeground} />
-                    <Text style={[styles.checkoutBtnText, { color: colors.primaryForeground }]}>
-                      Place Order · ৳{finalTotal.toLocaleString()}
-                    </Text>
-                  </>
-                )
-              }
+              <Feather name="arrow-right-circle" size={18} color={colors.primaryForeground} />
+              <Text style={[styles.checkoutBtnText, { color: colors.primaryForeground }]}>
+                Proceed to Checkout · ৳{finalTotal.toLocaleString()}
+              </Text>
             </TouchableOpacity>
           </View>
         </>
@@ -406,5 +392,16 @@ function makeStyles(colors: ReturnType<typeof import('@/hooks/useColors').useCol
       borderRadius: colors.radius,
     },
     checkoutBtnText: { fontSize: 16, fontFamily: FONT_SEMIBOLD },
+    resumeBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: colors.radius - 2,
+      borderWidth: 1,
+      marginBottom: 8,
+    },
+    resumeText: { fontSize: 12, fontFamily: FONT_MEDIUM, flex: 1 },
   });
 }

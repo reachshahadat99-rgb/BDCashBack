@@ -200,7 +200,14 @@ export async function clearCart(userId: string) {
 // Checkout — fully atomic
 // ---------------------------------------------------------------------------
 
-export async function checkout(userId: string, couponCode?: string) {
+export interface DeliveryAddress {
+  name: string;
+  phone: string;
+  address: string;
+  city: string;
+}
+
+export async function checkout(userId: string, couponCode?: string, deliveryAddress?: DeliveryAddress) {
   // All financial writes — including the cart read — happen inside a single
   // transaction. We use DELETE...RETURNING to atomically consume the cart,
   // so two concurrent checkout requests cannot both process the same items.
@@ -310,6 +317,7 @@ export async function checkout(userId: string, couponCode?: string) {
         discountAmount: String(discountAmount),
         couponCode: appliedCouponCode,
         itemsCount: totalItems,
+        deliveryAddress: deliveryAddress ? JSON.stringify(deliveryAddress) : null,
       })
       .returning();
 

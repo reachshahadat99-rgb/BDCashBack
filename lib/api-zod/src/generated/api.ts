@@ -262,7 +262,21 @@ export const RemoveCartItemResponse = zod.void()
  * @summary Place an order from the current cart
  */
 export const CheckoutBody = zod.object({
-  "couponCode": zod.string().optional().describe('Optional coupon code to apply at checkout')
+  "couponCode": zod.string().optional().describe('Optional coupon code to apply at checkout'),
+  "deliveryAddress": zod.object({
+    "name": zod.string(),
+    "phone": zod.string(),
+    "address": zod.string(),
+    "city": zod.string(),
+  }).optional().describe('Delivery address captured during checkout'),
+})
+
+export const SavePushTokenBody = zod.object({
+  "token": zod.string().describe('Expo push token'),
+})
+
+export const SavePushTokenResponse = zod.object({
+  "ok": zod.boolean(),
 })
 
 export const CheckoutResponse = zod.object({

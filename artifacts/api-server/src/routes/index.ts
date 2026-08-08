@@ -13,6 +13,7 @@ import cartRouter from "./cart";
 import ordersRouter from "./orders";
 import walletRouter from "./wallet";
 import watchEarnRouter from "./watch-earn";
+import pushTokenRouter from "./push-token";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(adminRouter);
 router.use(adminPaymentSettingsRouter);
 router.use(adminStoresRouter);
 router.use(watchEarnRouter);
+router.use(pushTokenRouter);
 
 export default router;

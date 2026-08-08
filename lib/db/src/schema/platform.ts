@@ -12,6 +12,13 @@ import {
 import { z } from "zod/v4";
 import { merchantStoresTable } from "./marketplace";
 
+/** Expo push tokens for mobile push notifications. One row per user, upserted on login. */
+export const userPushTokensTable = pgTable("user_push_tokens", {
+  userId: text("user_id").primaryKey(),
+  expoPushToken: text("expo_push_token").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 /** Platform administrators (Clerk user ids). First signed-in user may claim admin. */
 export const adminUsersTable = pgTable("admin_users", {
   userId: text("user_id").primaryKey(),
