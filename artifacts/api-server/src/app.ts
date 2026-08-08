@@ -9,6 +9,12 @@ import { logger } from "./lib/logger";
 const app: Express = express();
 
 // ---------------------------------------------------------------------------
+// Trust proxy — required when running behind Hostinger / any reverse proxy.
+// This allows express-rate-limit to read X-Forwarded-For correctly.
+// ---------------------------------------------------------------------------
+app.set("trust proxy", 1);
+
+// ---------------------------------------------------------------------------
 // Security headers
 // ---------------------------------------------------------------------------
 app.use(

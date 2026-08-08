@@ -67432,7 +67432,9 @@ router2.post("/auth/register", async (req, res) => {
       user: { id: userId, email: normalizedEmail, name: String(name).trim(), role }
     });
   } catch (err) {
-    console.error("[auth] register error:", err);
+    const cause = err?.cause;
+    console.error("[auth] register error:", err instanceof Error ? err.message : err);
+    if (cause) console.error("[auth] register cause:", cause instanceof Error ? cause.message : cause);
     res.status(500).json({ error: "Registration failed" });
   }
 });
@@ -67465,7 +67467,9 @@ router2.post("/auth/login", async (req, res) => {
       user: { id: user.id, email: user.email, name: user.name, role: user.role }
     });
   } catch (err) {
-    console.error("[auth] login error:", err);
+    const cause = err?.cause;
+    console.error("[auth] login error:", err instanceof Error ? err.message : err);
+    if (cause) console.error("[auth] login cause:", cause instanceof Error ? cause.message : cause);
     res.status(500).json({ error: "Login failed" });
   }
 });
@@ -71283,6 +71287,7 @@ var logger = (0, import_pino.default)({
 
 // src/app.ts
 var app = (0, import_express18.default)();
+app.set("trust proxy", 1);
 app.use(
   helmet({
     contentSecurityPolicy: false

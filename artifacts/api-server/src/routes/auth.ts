@@ -86,7 +86,10 @@ router.post("/auth/register", async (req, res) => {
       user: { id: userId, email: normalizedEmail, name: String(name).trim(), role },
     });
   } catch (err) {
-    console.error("[auth] register error:", err);
+    // Log the underlying DB/pg error so production logs reveal the real cause.
+    const cause = (err as { cause?: unknown })?.cause;
+    console.error("[auth] register error:", err instanceof Error ? err.message : err);
+    if (cause) console.error("[auth] register cause:", cause instanceof Error ? cause.message : cause);
     res.status(500).json({ error: "Registration failed" });
   }
 });
@@ -134,7 +137,9 @@ router.post("/auth/login", async (req, res) => {
       user: { id: user.id, email: user.email, name: user.name, role: user.role },
     });
   } catch (err) {
-    console.error("[auth] login error:", err);
+    const cause = (err as { cause?: unknown })?.cause;
+    console.error("[auth] login error:", err instanceof Error ? err.message : err);
+    if (cause) console.error("[auth] login cause:", cause instanceof Error ? cause.message : cause);
     res.status(500).json({ error: "Login failed" });
   }
 });
