@@ -18,13 +18,17 @@ const router: IRouter = Router();
 // Encryption helpers
 // ---------------------------------------------------------------------------
 
-const RAW_KEY = (process.env.PAYMENT_ENCRYPTION_KEY ?? "bdcashback-dev-enc-key-placeholder0").padEnd(32, "0").slice(0, 32);
-const ENC_KEY = Buffer.from(RAW_KEY);
+function getEncKey(): Buffer {
+  const raw = process.env.PAYMENT_ENCRYPTION_KEY;
+  if (!raw) throw new Error("PAYMENT_ENCRYPTION_KEY env var is required but not set");
+  return Buffer.from(raw.padEnd(32, "0").slice(0, 32));
+}
 
 function encrypt(plaintext: string): string {
   if (!plaintext) return "";
+  const key = getEncKey();
   const iv = randomBytes(16);
-  const cipher = createCipheriv("aes-256-cbc", ENC_KEY, iv);
+  const cipher = createCipheriv("aes-256-cbc", key, iv);
   const enc = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
   return iv.toString("hex") + ":" + enc.toString("hex");
 }
@@ -85,7 +89,7 @@ router.get("/admin/payment-settings", requireAdmin, async (_req, res): Promise<v
 });
 
 router.patch("/admin/payment-settings/:id", requireAdmin, async (req, res): Promise<void> => {
-  const { id } = req.params;
+  const id = String(req.params.id);
   if (!id) { res.status(400).json({ error: "Gateway ID required" }); return; }
 
   const { enabled, mode, merchantId, secretKey } = req.body as {
@@ -103,6 +107,10 @@ router.patch("/admin/payment-settings/:id", requireAdmin, async (req, res): Prom
   if (mode === "sandbox" || mode === "live") patch.mode = mode;
   if (typeof merchantId === "string") patch.merchantId = merchantId.trim();
   if (typeof secretKey === "string" && secretKey.trim()) {
+    if (!process.env.PAYMENT_ENCRYPTION_KEY) {
+      res.status(503).json({ error: "Payment secret encryption is not configured on this server" });
+      return;
+    }
     const trimmed = secretKey.trim();
     patch.secretKeyEncrypted = encrypt(trimmed);
     patch.secretKeyLastFour = trimmed.slice(-4);

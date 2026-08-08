@@ -71,7 +71,7 @@ async function writeAdminAudit(
 // Store summary
 // ---------------------------------------------------------------------------
 router.get("/admin/stores/:storeId/summary", requireAdmin, async (req, res): Promise<void> => {
-  const store = await resolveStore(req.params.storeId);
+  const store = await resolveStore(String(req.params.storeId));
   if (!store) { res.status(404).json({ error: "Store not found" }); return; }
 
   const [productCount] = await db
@@ -109,7 +109,7 @@ router.get("/admin/stores/:storeId/summary", requireAdmin, async (req, res): Pro
 // Products
 // ---------------------------------------------------------------------------
 router.get("/admin/stores/:storeId/products", requireAdmin, async (req, res): Promise<void> => {
-  const store = await resolveStore(req.params.storeId);
+  const store = await resolveStore(String(req.params.storeId));
   if (!store) { res.status(404).json({ error: "Store not found" }); return; }
 
   const rows = await db
@@ -123,7 +123,7 @@ router.get("/admin/stores/:storeId/products", requireAdmin, async (req, res): Pr
 });
 
 router.post("/admin/stores/:storeId/products", requireAdmin, async (req, res): Promise<void> => {
-  const store = await resolveStore(req.params.storeId);
+  const store = await resolveStore(String(req.params.storeId));
   if (!store) { res.status(404).json({ error: "Store not found" }); return; }
 
   const { categoryId, name, description, brand, price, originalPrice, cashbackPercent, imageUrl, stock } = req.body;
@@ -164,13 +164,13 @@ router.post("/admin/stores/:storeId/products", requireAdmin, async (req, res): P
 });
 
 router.patch("/admin/stores/:storeId/products/:productId", requireAdmin, async (req, res): Promise<void> => {
-  const store = await resolveStore(req.params.storeId);
+  const store = await resolveStore(String(req.params.storeId));
   if (!store) { res.status(404).json({ error: "Store not found" }); return; }
 
   const [existing] = await db
     .select()
     .from(merchantProductsTable)
-    .where(and(eq(merchantProductsTable.id, req.params.productId), eq(merchantProductsTable.storeId, store.id)))
+    .where(and(eq(merchantProductsTable.id, String(req.params.productId)), eq(merchantProductsTable.storeId, store.id)))
     .limit(1);
   if (!existing) { res.status(404).json({ error: "Product not found in this store" }); return; }
 
@@ -203,13 +203,13 @@ router.patch("/admin/stores/:storeId/products/:productId", requireAdmin, async (
 });
 
 router.delete("/admin/stores/:storeId/products/:productId", requireAdmin, async (req, res): Promise<void> => {
-  const store = await resolveStore(req.params.storeId);
+  const store = await resolveStore(String(req.params.storeId));
   if (!store) { res.status(404).json({ error: "Store not found" }); return; }
 
   const [existing] = await db
     .select()
     .from(merchantProductsTable)
-    .where(and(eq(merchantProductsTable.id, req.params.productId), eq(merchantProductsTable.storeId, store.id)))
+    .where(and(eq(merchantProductsTable.id, String(req.params.productId)), eq(merchantProductsTable.storeId, store.id)))
     .limit(1);
   if (!existing) { res.status(404).json({ error: "Product not found in this store" }); return; }
 
@@ -226,7 +226,7 @@ router.delete("/admin/stores/:storeId/products/:productId", requireAdmin, async 
 // Orders
 // ---------------------------------------------------------------------------
 router.get("/admin/stores/:storeId/orders", requireAdmin, async (req, res): Promise<void> => {
-  const store = await resolveStore(req.params.storeId);
+  const store = await resolveStore(String(req.params.storeId));
   if (!store) { res.status(404).json({ error: "Store not found" }); return; }
 
   const orders = await db
@@ -240,7 +240,7 @@ router.get("/admin/stores/:storeId/orders", requireAdmin, async (req, res): Prom
 });
 
 router.patch("/admin/stores/:storeId/orders/:orderId/status", requireAdmin, async (req, res): Promise<void> => {
-  const store = await resolveStore(req.params.storeId);
+  const store = await resolveStore(String(req.params.storeId));
   if (!store) { res.status(404).json({ error: "Store not found" }); return; }
 
   const { status, reason } = req.body as { status: string; reason?: string };
@@ -249,7 +249,7 @@ router.patch("/admin/stores/:storeId/orders/:orderId/status", requireAdmin, asyn
   const [existing] = await db
     .select()
     .from(merchantOrdersTable)
-    .where(and(eq(merchantOrdersTable.id, req.params.orderId), eq(merchantOrdersTable.storeId, store.id)))
+    .where(and(eq(merchantOrdersTable.id, String(req.params.orderId)), eq(merchantOrdersTable.storeId, store.id)))
     .limit(1);
   if (!existing) { res.status(404).json({ error: "Order not found in this store" }); return; }
 
@@ -271,14 +271,14 @@ router.patch("/admin/stores/:storeId/orders/:orderId/status", requireAdmin, asyn
 // Admin-created coupons are auto-approved and skip the normal approval queue.
 // ---------------------------------------------------------------------------
 router.get("/admin/stores/:storeId/coupons", requireAdmin, async (req, res): Promise<void> => {
-  const store = await resolveStore(req.params.storeId);
+  const store = await resolveStore(String(req.params.storeId));
   if (!store) { res.status(404).json({ error: "Store not found" }); return; }
   const rows = await listCouponsWithStore(eq(couponsTable.storeId, store.id));
   res.json(rows);
 });
 
 router.post("/admin/stores/:storeId/coupons", requireAdmin, async (req, res): Promise<void> => {
-  const store = await resolveStore(req.params.storeId);
+  const store = await resolveStore(String(req.params.storeId));
   if (!store) { res.status(404).json({ error: "Store not found" }); return; }
 
   const { code, title, discountType, discountValue, minOrderValue, maxUses, startsAt, endsAt } = req.body;
@@ -326,14 +326,14 @@ router.post("/admin/stores/:storeId/coupons", requireAdmin, async (req, res): Pr
 // Admin-created deals are auto-approved.
 // ---------------------------------------------------------------------------
 router.get("/admin/stores/:storeId/deals", requireAdmin, async (req, res): Promise<void> => {
-  const store = await resolveStore(req.params.storeId);
+  const store = await resolveStore(String(req.params.storeId));
   if (!store) { res.status(404).json({ error: "Store not found" }); return; }
   const rows = await listDealsWithStore(eq(promoDealsTable.storeId, store.id));
   res.json(rows);
 });
 
 router.post("/admin/stores/:storeId/deals", requireAdmin, async (req, res): Promise<void> => {
-  const store = await resolveStore(req.params.storeId);
+  const store = await resolveStore(String(req.params.storeId));
   if (!store) { res.status(404).json({ error: "Store not found" }); return; }
 
   const { title, description, discountPercent, startsAt, endsAt } = req.body;
@@ -373,7 +373,7 @@ router.post("/admin/stores/:storeId/deals", requireAdmin, async (req, res): Prom
 // Admin-created campaigns are auto-approved.
 // ---------------------------------------------------------------------------
 router.get("/admin/stores/:storeId/group-buys", requireAdmin, async (req, res): Promise<void> => {
-  const store = await resolveStore(req.params.storeId);
+  const store = await resolveStore(String(req.params.storeId));
   if (!store) { res.status(404).json({ error: "Store not found" }); return; }
 
   const deals = await db.select().from(groupBuyDealsTable).where(eq(groupBuyDealsTable.storeId, store.id));
@@ -382,7 +382,7 @@ router.get("/admin/stores/:storeId/group-buys", requireAdmin, async (req, res): 
 });
 
 router.post("/admin/stores/:storeId/group-buys", requireAdmin, async (req, res): Promise<void> => {
-  const store = await resolveStore(req.params.storeId);
+  const store = await resolveStore(String(req.params.storeId));
   if (!store) { res.status(404).json({ error: "Store not found" }); return; }
 
   const { title, category, image, originalPrice, groupPrice, cashbackPercent, depositPercent, minParticipants, endsAt } = req.body;

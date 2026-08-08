@@ -1,0 +1,24 @@
+kind = "mobile"
+previewPath = "/mobile/"
+title = "BDCashBack Mobile"
+description = "A React Native companion app for the BDCashBack marketplace. Lets customers browse products, manage their cart, place orders, track cashback rewards, and monitor their wallet balance — all with a native mobile experience backed by the existing API."
+version = "1.0.0"
+id = "artifacts/bdcashback-mobile"
+router = "expo-domain"
+
+[[services]]
+name = "expo"
+ensurePreviewReachable = "/status"
+paths = [ "/mobile/" ]
+localPort = 23858
+
+[services.development]
+run = "pnpm --filter @workspace/bdcashback-mobile run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/bdcashback-mobile", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/bdcashback-mobile", "run", "serve" ]
+
+[services.env]
+PORT = "23858"
+BASE_PATH = "/mobile/"
