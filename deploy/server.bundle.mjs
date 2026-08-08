@@ -71469,7 +71469,32 @@ async function processExpiredGroupBuyCampaigns() {
   return settled;
 }
 
+// src/lib/startup-migrations.ts
+async function runStartupMigrations() {
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS "users" (
+        "id"            text        PRIMARY KEY,
+        "email"         text        NOT NULL,
+        "password_hash" text        NOT NULL,
+        "name"          text        NOT NULL,
+        "role"          text        NOT NULL DEFAULT 'customer',
+        "created_at"    timestamptz NOT NULL DEFAULT now()
+      )
+    `);
+    await db.execute(sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS "users_email_unique"
+        ON "users" ("email")
+    `);
+    logger.info("Startup migrations complete");
+  } catch (err) {
+    logger.error({ err }, "Startup migration failed");
+    throw err;
+  }
+}
+
 // src/index.ts
+await runStartupMigrations();
 var rawPort = process.env["PORT"];
 if (!rawPort) {
   throw new Error(

@@ -2,6 +2,10 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { releaseMatureCashback } from "./lib/orders";
 import { processExpiredGroupBuyCampaigns } from "./lib/group-buy-processor";
+import { runStartupMigrations } from "./lib/startup-migrations";
+
+// Run schema migrations before accepting traffic.
+await runStartupMigrations();
 
 const rawPort = process.env["PORT"];
 
