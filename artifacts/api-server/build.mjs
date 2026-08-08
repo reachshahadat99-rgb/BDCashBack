@@ -4,13 +4,22 @@ import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
 import { rm } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 
 // Plugins (e.g. 'esbuild-plugin-pino') may use `require` to resolve dependencies
 globalThis.require = createRequire(import.meta.url);
 
 const artifactDir = path.dirname(fileURLToPath(import.meta.url));
+const workspaceRoot = path.resolve(artifactDir, "../..");
 
 async function buildAll() {
+  // Rebuild @workspace/db declarations so TypeScript project references and
+  // the esbuild bundle both see the latest schema exports (e.g. paymentGatewaySettingsTable).
+  console.log("Building @workspace/db...");
+  execFileSync("npx", ["tsc", "--build", path.join(workspaceRoot, "lib/db")], {
+    stdio: "inherit",
+    cwd: workspaceRoot,
+  });
   const distDir = path.resolve(artifactDir, "dist");
   await rm(distDir, { recursive: true, force: true });
 

@@ -531,13 +531,13 @@ router.patch(
       .where(eq(watchEarnCampaignsTable.id, campaignId))
       .returning();
 
-    await writeAuditLog({
-      adminUserId: res.locals.userId as string,
-      action: `watch_earn.campaign.${newStatus}`,
-      targetType: "watch_earn_campaign",
-      targetId: campaignId,
-      details: JSON.stringify({ title: campaign.title, previousStatus: campaign.status }),
-    });
+    await writeAuditLog(
+      res.locals.userId as string,
+      `watch_earn.campaign.${newStatus}`,
+      "watch_earn_campaign",
+      campaignId,
+      { title: campaign.title, previousStatus: campaign.status },
+    );
 
     res.json(campaignView(updated));
   },

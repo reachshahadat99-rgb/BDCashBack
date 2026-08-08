@@ -523,7 +523,7 @@ router.patch("/admin/fee-rules/:id", requireAdmin, async (req, res): Promise<voi
 // ---------------------------------------------------------------------------
 // Shared audit-log helper
 // ---------------------------------------------------------------------------
-async function writeAuditLog(
+export async function writeAuditLog(
   adminUserId: string,
   action: string,
   targetType: string,
