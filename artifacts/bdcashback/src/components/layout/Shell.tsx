@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useClerk, useUser } from "@clerk/react";
-import { Home, Search, Wallet, User, Bell, Store, Ticket, Flame, Percent, Users, Gift, ChevronDown } from "lucide-react";
+import { Home, Search, Wallet, User, Bell, Store, Ticket, Flame, Percent, Users, Gift, ChevronDown, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect } from "react";
@@ -10,6 +10,7 @@ const primaryNav = [
   { href: "/products", label: "Shop" },
   { href: "/deals", label: "Deals" },
   { href: "/cashback", label: "Cashback" },
+  { href: "/orders", label: "Orders" },
 ];
 
 const moreNav = [
@@ -22,9 +23,9 @@ const moreNav = [
 const mobileBottomNav = [
   { href: "/", icon: Home, label: "Home" },
   { href: "/products", icon: Search, label: "Shop" },
-  { href: "/deals", icon: Flame, label: "Deals" },
-  { href: "/coupons", icon: Ticket, label: "Coupons" },
+  { href: "/orders", icon: ShoppingBag, label: "Orders" },
   { href: "/wallet", icon: Wallet, label: "Wallet" },
+  { href: "/account", icon: User, label: "Account" },
 ];
 
 export function Shell({ children }: { children: React.ReactNode }) {
@@ -121,7 +122,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             </Button>
             {isLoaded && user ? (
               <div className="flex items-center gap-2">
-                <Link href="/profile" className="inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-sm font-semibold hover:bg-accent transition-colors">
+                <Link href="/account" className="inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-sm font-semibold hover:bg-accent transition-colors">
                   <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
                     {(user.firstName?.[0] ?? user.emailAddresses[0]?.emailAddress[0] ?? "U").toUpperCase()}
                   </span>

@@ -17,6 +17,8 @@ import MerchantPromotions from './pages/MerchantPromotions';
 import Admin from './pages/Admin';
 import CustomerSignup from './pages/CustomerSignup';
 import MerchantSignup from './pages/MerchantSignup';
+import Orders from './pages/Orders';
+import Account from './pages/Account';
 import { useEffect, useRef } from 'react';
 
 const queryClient = new QueryClient({
@@ -186,6 +188,8 @@ function AppRoutes() {
       <Route path="/" component={HomeRoute} />
       <Route path="/products" component={Products} />
       <Route path="/wallet" component={Wallet} />
+      <Route path="/orders" component={Orders} />
+      <Route path="/account" component={Account} />
       <Route path="/merchant" component={Merchant} />
       <Route path="/merchant/promotions" component={MerchantPromotions} />
       <Route path="/admin" component={Admin} />
