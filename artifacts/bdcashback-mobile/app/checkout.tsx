@@ -22,6 +22,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { FONT_BOLD, FONT_MEDIUM, FONT_REGULAR, FONT_SEMIBOLD } from '@/constants/fonts';
 import { useCheckoutDraft, type DeliveryAddress } from '@/hooks/useCheckoutDraft';
 import { scheduleLocalNotification } from '@/hooks/usePushNotifications';
+import { isAddressValid } from '@/utils/checkoutValidation';
 
 type Step = 0 | 1 | 2 | 3;
 const STEP_LABELS: Record<Step, string> = {
@@ -73,11 +74,7 @@ export default function CheckoutScreen() {
 
   // ── Step validation ───────────────────────────────────────────────────────
 
-  const addressValid =
-    draft.address.name.trim().length > 0 &&
-    draft.address.phone.trim().length > 0 &&
-    draft.address.address.trim().length > 0 &&
-    draft.address.city.trim().length > 0;
+  const addressValid = isAddressValid(draft.address);
 
   const handleNextFromAddress = useCallback(() => {
     if (!addressValid) {

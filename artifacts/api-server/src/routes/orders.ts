@@ -20,8 +20,14 @@ const router: IRouter = Router();
 router.post("/checkout", requireAuth, async (req, res): Promise<void> => {
   const userId = res.locals.userId as string;
   const body = CheckoutBody.safeParse(req.body ?? {});
-  const couponCode = body.success ? (body.data.couponCode ?? undefined) : undefined;
-  const deliveryAddress = body.success ? (body.data.deliveryAddress ?? undefined) : undefined;
+
+  if (!body.success) {
+    res.status(400).json({ error: "deliveryAddress is required and all fields (name, phone, address, city) must be non-empty" });
+    return;
+  }
+
+  const couponCode = body.data.couponCode ?? undefined;
+  const deliveryAddress = body.data.deliveryAddress;
 
   try {
     const result = await checkout(userId, couponCode, deliveryAddress);

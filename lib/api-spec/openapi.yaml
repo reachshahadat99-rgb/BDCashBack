@@ -1777,10 +1777,28 @@ components:
       required: [quantity]
     CheckoutRequest:
       type: object
+      required: [deliveryAddress]
       properties:
         couponCode:
           type: string
           description: Optional coupon code to apply at checkout
+        deliveryAddress:
+          type: object
+          required: [name, phone, address, city]
+          description: Delivery address captured during checkout
+          properties:
+            name:
+              type: string
+              minLength: 1
+            phone:
+              type: string
+              minLength: 1
+            address:
+              type: string
+              minLength: 1
+            city:
+              type: string
+              minLength: 1
     CustomerOrder:
       type: object
       properties:

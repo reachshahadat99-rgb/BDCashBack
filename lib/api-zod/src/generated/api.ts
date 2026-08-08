@@ -264,11 +264,11 @@ export const RemoveCartItemResponse = zod.void()
 export const CheckoutBody = zod.object({
   "couponCode": zod.string().optional().describe('Optional coupon code to apply at checkout'),
   "deliveryAddress": zod.object({
-    "name": zod.string(),
-    "phone": zod.string(),
-    "address": zod.string(),
-    "city": zod.string(),
-  }).optional().describe('Delivery address captured during checkout'),
+    "name": zod.string().min(1),
+    "phone": zod.string().min(1),
+    "address": zod.string().min(1),
+    "city": zod.string().min(1),
+  }).describe('Delivery address captured during checkout'),
 })
 
 export const SavePushTokenBody = zod.object({

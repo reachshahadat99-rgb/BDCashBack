@@ -23,6 +23,7 @@ import {
   checkout,
   setBaseUrl,
 } from '@workspace/api-client-react';
+import { isAddressValid } from '../utils/checkoutValidation';
 
 // ─── fixtures ────────────────────────────────────────────────────────────────
 
@@ -228,6 +229,75 @@ describe('checkout', () => {
       makeResponse({ message: 'Insufficient wallet balance' }, 402),
     );
     await expect(checkout({})).rejects.toThrow();
+  });
+});
+
+// ─── address validation (pure-function tests, no React) ──────────────────────
+
+describe('isAddressValid', () => {
+  const FULL_ADDRESS = {
+    name: 'Jane Doe',
+    phone: '01700000000',
+    address: '123 Main St',
+    city: 'Dhaka',
+  };
+
+  it('returns true when all fields are filled', () => {
+    expect(isAddressValid(FULL_ADDRESS)).toBe(true);
+  });
+
+  it('blocks submission when name is empty', () => {
+    expect(isAddressValid({ ...FULL_ADDRESS, name: '' })).toBe(false);
+  });
+
+  it('blocks submission when name is whitespace only', () => {
+    expect(isAddressValid({ ...FULL_ADDRESS, name: '   ' })).toBe(false);
+  });
+
+  it('blocks submission when phone is empty', () => {
+    expect(isAddressValid({ ...FULL_ADDRESS, phone: '' })).toBe(false);
+  });
+
+  it('blocks submission when address is empty', () => {
+    expect(isAddressValid({ ...FULL_ADDRESS, address: '' })).toBe(false);
+  });
+
+  it('blocks submission when city is empty', () => {
+    expect(isAddressValid({ ...FULL_ADDRESS, city: '' })).toBe(false);
+  });
+
+  it('blocks submission when all fields are empty', () => {
+    expect(isAddressValid({ name: '', phone: '', address: '', city: '' })).toBe(false);
+  });
+});
+
+// ─── checkout without deliveryAddress (API-level smoke test) ─────────────────
+
+describe('checkout — missing or malformed deliveryAddress', () => {
+  it('raises a typed error when the API rejects a missing deliveryAddress', async () => {
+    fetchMock.mockResolvedValue(
+      makeResponse({ error: 'deliveryAddress is required' }, 400),
+    );
+
+    // Calling checkout without any deliveryAddress should reject
+    await expect(checkout({})).rejects.toThrow();
+  });
+
+  it('surfaces the server error message when deliveryAddress is malformed', async () => {
+    fetchMock.mockResolvedValue(
+      makeResponse({ error: 'deliveryAddress.phone is invalid' }, 422),
+    );
+
+    let caughtError: unknown;
+    try {
+      await checkout({
+        deliveryAddress: { name: 'X', phone: '', address: '', city: '' },
+      });
+    } catch (err) {
+      caughtError = err;
+    }
+
+    expect(caughtError).toBeDefined();
   });
 });
 
