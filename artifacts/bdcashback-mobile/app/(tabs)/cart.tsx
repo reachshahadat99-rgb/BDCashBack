@@ -18,6 +18,7 @@ import {
   useClearCart,
   useValidateCoupon,
   getGetCartQueryKey,
+  RequestTimeoutError,
   type CartItem,
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -40,7 +41,8 @@ export default function CartScreen() {
   const updateItem = useUpdateCartItem();
   const removeItem = useRemoveCartItem();
   const clearCart = useClearCart();
-  const validateCoupon = useValidateCoupon();
+  const COUPON_TIMEOUT_MS = 15_000;
+  const validateCoupon = useValidateCoupon({ request: { timeoutMs: COUPON_TIMEOUT_MS } });
 
   const topInset = Platform.OS === 'web' ? 67 : insets.top;
   const styles = makeStyles(colors);
@@ -86,7 +88,16 @@ export default function CartScreen() {
             Alert.alert('Invalid Coupon', result.reason ?? 'Coupon is not valid.');
           }
         },
-        onError: () => Alert.alert('Error', 'Could not validate coupon.'),
+        onError: (err: unknown) => {
+          if (err instanceof RequestTimeoutError) {
+            Alert.alert(
+              'Request Timed Out',
+              'The coupon check took too long. Please check your connection and try again.',
+            );
+            return;
+          }
+          Alert.alert('Error', 'Could not validate coupon. Please try again.');
+        },
       },
     );
   }, [couponCode, cart?.subtotal, validateCoupon]);

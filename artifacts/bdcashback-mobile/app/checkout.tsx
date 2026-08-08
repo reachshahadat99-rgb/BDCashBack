@@ -45,8 +45,9 @@ export default function CheckoutScreen() {
   const { draft, setDraft, clearDraft, loaded } = useCheckoutDraft();
   const { data: cart } = useGetCart({ query: { enabled: !!isSignedIn, queryKey: getGetCartQueryKey() } });
   const CHECKOUT_TIMEOUT_MS = 15_000;
+  const COUPON_TIMEOUT_MS = 15_000;
   const checkout = useCheckout({ request: { timeoutMs: CHECKOUT_TIMEOUT_MS } });
-  const validateCoupon = useValidateCoupon();
+  const validateCoupon = useValidateCoupon({ request: { timeoutMs: COUPON_TIMEOUT_MS } });
 
   const [placedOrder, setPlacedOrder] = useState<{ id: string; cashbackAmount: number } | null>(null);
 
@@ -115,7 +116,16 @@ export default function CheckoutScreen() {
             Alert.alert('Invalid Coupon', result.reason ?? 'Coupon is not valid.');
           }
         },
-        onError: () => Alert.alert('Error', 'Could not validate coupon.'),
+        onError: (err: unknown) => {
+          if (err instanceof RequestTimeoutError) {
+            Alert.alert(
+              'Request Timed Out',
+              'The coupon check took too long. Please check your connection and try again.',
+            );
+            return;
+          }
+          Alert.alert('Error', 'Could not validate coupon. Please try again.');
+        },
       },
     );
   }, [couponInput, subtotal, validateCoupon]);
