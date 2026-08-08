@@ -23,7 +23,7 @@ import {
   checkout,
   setBaseUrl,
 } from '@workspace/api-client-react';
-import { isAddressValid, isPhoneValid } from '../utils/checkoutValidation';
+import { isAddressValid, isNameValid, isPhoneValid } from '../utils/checkoutValidation';
 
 // ─── fixtures ────────────────────────────────────────────────────────────────
 
@@ -268,6 +268,109 @@ describe('isAddressValid', () => {
 
   it('blocks submission when all fields are empty', () => {
     expect(isAddressValid({ name: '', phone: '', address: '', city: '' })).toBe(false);
+  });
+});
+
+// ─── name validation (pure-function tests, no React) ─────────────────────────
+
+describe('isNameValid', () => {
+  // valid inputs
+  it('accepts a normal full name', () => {
+    expect(isNameValid('Jane Doe')).toBe(true);
+  });
+
+  it('accepts a single word of 2+ chars', () => {
+    expect(isNameValid('Jo')).toBe(true);
+  });
+
+  it('accepts a name with hyphens and letters', () => {
+    expect(isNameValid('Mary-Jane')).toBe(true);
+  });
+
+  // invalid — too short
+  it('rejects an empty string', () => {
+    expect(isNameValid('')).toBe(false);
+  });
+
+  it('rejects a single character', () => {
+    expect(isNameValid('A')).toBe(false);
+  });
+
+  it('rejects whitespace-only string', () => {
+    expect(isNameValid('   ')).toBe(false);
+  });
+
+  it('rejects a single letter with surrounding spaces (trims to 1 char)', () => {
+    expect(isNameValid(' A ')).toBe(false);
+  });
+
+  // invalid — no letters
+  it('rejects a purely numeric string like "123"', () => {
+    expect(isNameValid('123')).toBe(false);
+  });
+
+  it('rejects a string of only punctuation like "!!!"', () => {
+    expect(isNameValid('!!!')).toBe(false);
+  });
+
+  it('rejects a mix of digits and punctuation like "12!!"', () => {
+    expect(isNameValid('12!!')).toBe(false);
+  });
+
+  it('rejects a string that is only dashes', () => {
+    expect(isNameValid('---')).toBe(false);
+  });
+
+  // Bengali / Arabic script regression — digits and punctuation in those blocks
+  // must NOT be treated as letters (Bangladesh-focused app)
+  it('rejects Bengali digits like "১২৩" (no letters, only script digits)', () => {
+    expect(isNameValid('১২৩')).toBe(false);
+  });
+
+  it('rejects Arabic-script digits like "١٢٣" (no letters, only script digits)', () => {
+    expect(isNameValid('١٢٣')).toBe(false);
+  });
+
+  it('rejects a Bengali punctuation-only string', () => {
+    // U+0964 DEVANAGARI DANDA, U+0965 DEVANAGARI DOUBLE DANDA — used in Bengali text too
+    expect(isNameValid('।।')).toBe(false);
+  });
+
+  // Names with actual Bengali letters should still be accepted
+  it('accepts a name written in Bengali letters', () => {
+    // "আলী" — Bengali letters, 3 chars
+    expect(isNameValid('আলী')).toBe(true);
+  });
+});
+
+// ─── isAddressValid — name field enforcement ──────────────────────────────────
+
+describe('isAddressValid — name field enforcement', () => {
+  const FULL_ADDRESS = {
+    name: 'Jane Doe',
+    phone: '01700000000',
+    address: '123 Main St',
+    city: 'Dhaka',
+  };
+
+  it('rejects a name that is only numbers', () => {
+    expect(isAddressValid({ ...FULL_ADDRESS, name: '123' })).toBe(false);
+  });
+
+  it('rejects a name that is only punctuation', () => {
+    expect(isAddressValid({ ...FULL_ADDRESS, name: '!!!' })).toBe(false);
+  });
+
+  it('rejects a single-character name', () => {
+    expect(isAddressValid({ ...FULL_ADDRESS, name: 'A' })).toBe(false);
+  });
+
+  it('rejects a name shorter than 2 chars after trimming', () => {
+    expect(isAddressValid({ ...FULL_ADDRESS, name: ' B ' })).toBe(false);
+  });
+
+  it('accepts a valid alphabetic name of 2+ chars', () => {
+    expect(isAddressValid({ ...FULL_ADDRESS, name: 'Jo' })).toBe(true);
   });
 });
 

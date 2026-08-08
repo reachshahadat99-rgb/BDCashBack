@@ -23,7 +23,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { FONT_BOLD, FONT_MEDIUM, FONT_REGULAR, FONT_SEMIBOLD } from '@/constants/fonts';
 import { useCheckoutDraft, type DeliveryAddress } from '@/hooks/useCheckoutDraft';
 import { scheduleLocalNotification } from '@/hooks/usePushNotifications';
-import { isAddressValid, isPhoneValid } from '@/utils/checkoutValidation';
+import { isAddressValid, isNameValid, isPhoneValid } from '@/utils/checkoutValidation';
 
 type Step = 0 | 1 | 2 | 3;
 const STEP_LABELS: Record<Step, string> = {
@@ -80,7 +80,9 @@ export default function CheckoutScreen() {
 
   const handleNextFromAddress = useCallback(() => {
     if (!addressValid) {
-      if (!isPhoneValid(draft.address.phone)) {
+      if (!isNameValid(draft.address.name)) {
+        Alert.alert('Invalid Name', 'Name must be at least 2 characters and contain at least one letter.');
+      } else if (!isPhoneValid(draft.address.phone)) {
         Alert.alert('Invalid Phone', 'Please enter a valid phone number (digits only, at least 7 digits).');
       } else {
         Alert.alert('Missing Details', 'Please fill in all address fields.');
@@ -89,7 +91,7 @@ export default function CheckoutScreen() {
     }
     Haptics.selectionAsync();
     setStep(1);
-  }, [addressValid, draft.address.phone]);
+  }, [addressValid, draft.address.name, draft.address.phone]);
 
   const handleNextFromPayment = useCallback(() => {
     Haptics.selectionAsync();
@@ -336,36 +338,49 @@ function AddressStep({
   colors: ReturnType<typeof import('@/hooks/useColors').useColors>;
   styles: ReturnType<typeof makeStyles>;
 }) {
+  const [nameTouched, setNameTouched] = useState(false);
   const [phoneTouched, setPhoneTouched] = useState(false);
+
+  const nameError = nameTouched && !isNameValid(address.name)
+    ? 'Name must be at least 2 characters and contain at least one letter'
+    : null;
   const phoneError = phoneTouched && !isPhoneValid(address.phone)
     ? 'Enter a valid phone number (digits only, at least 7 digits)'
     : null;
 
-  const field = (key: keyof DeliveryAddress, label: string, placeholder: string, keyboardType?: 'default' | 'phone-pad') => (
-    <View style={styles.fieldGroup} key={key}>
-      <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>{label}</Text>
-      <TextInput
-        style={[
-          styles.fieldInput,
-          {
-            backgroundColor: colors.muted,
-            color: colors.foreground,
-            borderColor: key === 'phone' && phoneError ? colors.destructive : colors.border,
-          },
-        ]}
-        placeholder={placeholder}
-        placeholderTextColor={colors.mutedForeground}
-        value={address[key]}
-        onChangeText={(v) => onChange({ ...address, [key]: v })}
-        onBlur={key === 'phone' ? () => setPhoneTouched(true) : undefined}
-        keyboardType={keyboardType ?? 'default'}
-        returnKeyType="next"
-      />
-      {key === 'phone' && phoneError && (
-        <Text style={[styles.fieldError, { color: colors.destructive }]}>{phoneError}</Text>
-      )}
-    </View>
-  );
+  const field = (key: keyof DeliveryAddress, label: string, placeholder: string, keyboardType?: 'default' | 'phone-pad') => {
+    const hasError = (key === 'name' && nameError) || (key === 'phone' && phoneError);
+    const errorMsg = key === 'name' ? nameError : key === 'phone' ? phoneError : null;
+    return (
+      <View style={styles.fieldGroup} key={key}>
+        <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>{label}</Text>
+        <TextInput
+          style={[
+            styles.fieldInput,
+            {
+              backgroundColor: colors.muted,
+              color: colors.foreground,
+              borderColor: hasError ? colors.destructive : colors.border,
+            },
+          ]}
+          placeholder={placeholder}
+          placeholderTextColor={colors.mutedForeground}
+          value={address[key]}
+          onChangeText={(v) => onChange({ ...address, [key]: v })}
+          onBlur={
+            key === 'name' ? () => setNameTouched(true)
+            : key === 'phone' ? () => setPhoneTouched(true)
+            : undefined
+          }
+          keyboardType={keyboardType ?? 'default'}
+          returnKeyType="next"
+        />
+        {errorMsg && (
+          <Text style={[styles.fieldError, { color: colors.destructive }]}>{errorMsg}</Text>
+        )}
+      </View>
+    );
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.stepContent} keyboardShouldPersistTaps="handled">
