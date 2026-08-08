@@ -1,5 +1,11 @@
 export type CustomFetchOptions = RequestInit & {
   responseType?: "json" | "text" | "blob" | "auto";
+  /**
+   * Maximum time (in milliseconds) to wait for the server to respond.
+   * When the timeout elapses the request is aborted and a
+   * `RequestTimeoutError` is thrown.  Defaults to no timeout.
+   */
+  timeoutMs?: number;
 };
 
 export type ErrorType<T = unknown> = ApiError<T>;
@@ -171,6 +177,23 @@ function buildErrorMessage(response: Response, data: unknown): string {
   return prefix;
 }
 
+export class RequestTimeoutError extends Error {
+  readonly name = "RequestTimeoutError";
+  readonly timeoutMs: number;
+  readonly method: string;
+  readonly url: string;
+
+  constructor(timeoutMs: number, requestInfo: { method: string; url: string }) {
+    super(
+      `Request timed out after ${timeoutMs} ms — please try again`,
+    );
+    Object.setPrototypeOf(this, new.target.prototype);
+    this.timeoutMs = timeoutMs;
+    this.method = requestInfo.method;
+    this.url = requestInfo.url;
+  }
+}
+
 export class ApiError<T = unknown> extends Error {
   readonly name = "ApiError";
   readonly status: number;
@@ -327,7 +350,7 @@ export async function customFetch<T = unknown>(
   options: CustomFetchOptions = {},
 ): Promise<T> {
   input = applyBaseUrl(input);
-  const { responseType = "auto", headers: headersInit, ...init } = options;
+  const { responseType = "auto", headers: headersInit, timeoutMs, signal: callerSignal, ...init } = options;
 
   const method = resolveMethod(input, init.method);
 
@@ -360,7 +383,49 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, { ...init, method, headers });
+  // ── Timeout handling ───────────────────────────────────────────────────────
+  // Build an AbortController for the timeout, then merge it with any caller-
+  // supplied signal so that either side can abort the request independently.
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  let timeoutController: AbortController | undefined;
+  let effectiveSignal: AbortSignal | undefined = callerSignal as AbortSignal | undefined;
+
+  if (timeoutMs != null && timeoutMs > 0) {
+    timeoutController = new AbortController();
+    timeoutId = setTimeout(() => timeoutController!.abort(), timeoutMs);
+
+    if (callerSignal) {
+      // Propagate the caller's abort to the timeout controller as well.
+      if ((callerSignal as AbortSignal).aborted) {
+        timeoutController.abort();
+      } else {
+        (callerSignal as AbortSignal).addEventListener("abort", () => timeoutController!.abort(), { once: true });
+      }
+    }
+
+    effectiveSignal = timeoutController.signal;
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(input, { ...init, method, headers, signal: effectiveSignal });
+  } catch (err) {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+
+    // Distinguish a timeout-driven abort from a caller-driven abort.
+    if (
+      err instanceof Error &&
+      err.name === "AbortError" &&
+      timeoutController?.signal.aborted &&
+      !(callerSignal as AbortSignal | undefined)?.aborted
+    ) {
+      throw new RequestTimeoutError(timeoutMs!, requestInfo);
+    }
+
+    throw err;
+  }
+
+  if (timeoutId !== undefined) clearTimeout(timeoutId);
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);

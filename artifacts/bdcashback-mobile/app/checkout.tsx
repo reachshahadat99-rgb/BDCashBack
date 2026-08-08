@@ -16,6 +16,7 @@ import {
   useValidateCoupon,
   getGetCartQueryKey,
   getListOrdersQueryKey,
+  RequestTimeoutError,
   type CartItem,
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -43,7 +44,8 @@ export default function CheckoutScreen() {
   const [step, setStep] = useState<Step>(0);
   const { draft, setDraft, clearDraft, loaded } = useCheckoutDraft();
   const { data: cart } = useGetCart({ query: { enabled: !!isSignedIn, queryKey: getGetCartQueryKey() } });
-  const checkout = useCheckout();
+  const CHECKOUT_TIMEOUT_MS = 15_000;
+  const checkout = useCheckout({ request: { timeoutMs: CHECKOUT_TIMEOUT_MS } });
   const validateCoupon = useValidateCoupon();
 
   const [placedOrder, setPlacedOrder] = useState<{ id: string; cashbackAmount: number } | null>(null);
@@ -147,6 +149,17 @@ export default function CheckoutScreen() {
           );
         },
         onError: (err: unknown) => {
+          if (err instanceof RequestTimeoutError) {
+            Alert.alert(
+              'Request Timed Out',
+              'The server took too long to respond. Please check your connection and try again.',
+              [
+                { text: 'Try Again', onPress: handlePlaceOrder },
+                { text: 'Cancel', style: 'cancel' },
+              ],
+            );
+            return;
+          }
           const msg =
             err && typeof err === 'object' && 'error' in err
               ? String((err as any).error)
