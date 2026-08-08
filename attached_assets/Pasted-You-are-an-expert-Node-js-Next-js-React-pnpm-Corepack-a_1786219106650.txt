@@ -1,0 +1,176 @@
+You are an expert Node.js, Next.js/React, pnpm, Corepack, and Hostinger deployment engineer.
+
+My application deploys successfully in development, but deployment on Hostinger fails during dependency installation with this error:
+
+```text
+node:internal/modules/esm/utils:272
+throw new ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING();
+
+TypeError [ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING]:
+A dynamic import callback was not specified.
+
+at importModuleDynamicallyCallback (node:internal/modules/esm/utils:272:9)
+at Object. (/home/u192365142/.cache/node/corepack/v1/pnpm/11.20.0/bin/pnpm.cjs:3:1)
+at Module2._compile
+at /opt/alt/alt-nodejs20/root/usr/lib/node_modules/corepack/dist/lib/corepack.cjs
+...
+Node.js v20.19.4
+
+ERROR: Failed to install dependencies
+```
+
+## Objective
+
+Fix the project so it can reliably install dependencies and deploy on Hostinger.
+
+## IMPORTANT RULES
+
+1. First inspect the entire project before making changes.
+2. Identify the exact cause of the Corepack + pnpm 11.20.0 compatibility problem.
+3. Do NOT blindly change unrelated application code.
+4. Preserve all existing features and functionality.
+5. Do NOT remove dependencies unless they are genuinely unnecessary.
+6. Do NOT introduce placeholder code.
+7. Do NOT break the existing lockfile or dependency resolution.
+8. The final project must remain production-ready.
+9. Prefer the simplest and most reliable Hostinger-compatible solution.
+10. Do not assume the framework. Detect whether this is Next.js, React/Vite, Node.js, or another framework from the project files.
+
+## Step 1 — Inspect
+
+Check:
+
+* package.json
+* pnpm-lock.yaml
+* package-lock.json
+* yarn.lock
+* .npmrc
+* .nvmrc
+* .node-version
+* corepack configuration
+* packageManager field
+* Node.js version requirements
+* build scripts
+* start scripts
+* framework configuration
+* Hostinger deployment configuration
+* all dependency-management configuration
+
+Determine exactly why Hostinger is invoking:
+
+```text
+pnpm 11.20.0
+```
+
+and why it crashes under:
+
+```text
+Node.js v20.19.4
+```
+
+## Step 2 — Choose the Best Fix
+
+Evaluate these approaches:
+
+### Option A
+
+Use a stable pnpm 10.x version compatible with the project.
+
+### Option B
+
+Use npm instead of pnpm if the project can safely support it.
+
+### Option C
+
+Use a compatible Node.js version if required.
+
+Choose the solution that is most reliable for Hostinger deployment while causing the fewest changes to the project.
+
+Do NOT change package managers unnecessarily if the current project is heavily dependent on pnpm.
+
+## Step 3 — Apply the Fix
+
+If pnpm is the correct package manager:
+
+* Set a stable compatible pnpm version.
+* Update the packageManager field if necessary.
+* Ensure Corepack can activate that version correctly.
+* Ensure the lockfile matches the selected pnpm version.
+* Make sure Hostinger does not automatically force pnpm 11.20.0.
+
+If npm is safer:
+
+* Generate a correct package-lock.json.
+* Ensure dependency versions remain consistent.
+* Remove conflicting package-manager configuration only if necessary.
+* Make sure npm install works from a clean environment.
+
+## Step 4 — Verify Locally
+
+Simulate a clean production installation.
+
+Remove:
+
+```text
+node_modules
+```
+
+and any inappropriate generated dependency artifacts.
+
+Then perform a clean dependency installation using the selected package manager.
+
+Run:
+
+```text
+install dependencies
+build application
+```
+
+Then run the production application using the project's actual production start command.
+
+Do not consider the task complete until the build succeeds.
+
+## Step 5 — Hostinger Configuration
+
+After fixing the project, provide the exact Hostinger settings I should use:
+
+* Node.js version
+* Package manager
+* Install command
+* Build command
+* Start command
+* Environment variables required
+* Application root
+* Any required Node.js/Corepack configuration
+
+If Hostinger requires a specific configuration file, create or update it appropriately.
+
+## Step 6 — Final Verification
+
+Before finishing, verify:
+
+* Dependencies install successfully.
+* Build succeeds.
+* Production server starts.
+* No pnpm 11.20.0 Corepack crash remains.
+* No broken imports.
+* No missing dependencies.
+* No lockfile mismatch.
+* Existing application functionality is preserved.
+
+## Final Response
+
+At the end, report:
+
+1. Root cause
+2. Exact files changed
+3. Exact changes made
+4. Package manager selected
+5. Node.js version selected
+6. Exact Hostinger Install Command
+7. Exact Hostinger Build Command
+8. Exact Hostinger Start Command
+9. Whether the production build was successfully tested
+10. Any remaining issue that must be configured manually in Hostinger
+
+Do not merely give me instructions. Actually inspect and modify the project to solve the deployment problem.
