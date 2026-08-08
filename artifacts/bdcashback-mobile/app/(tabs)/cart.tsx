@@ -36,7 +36,7 @@ export default function CartScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const { hasDraft } = useCheckoutDraft();
 
-  const { data: cart, isLoading, refetch } = useGetCart({ query: { enabled: !!isSignedIn, queryKey: getGetCartQueryKey() } });
+  const { data: cart, isLoading, isError, refetch } = useGetCart({ query: { enabled: !!isSignedIn, queryKey: getGetCartQueryKey() } });
   const updateItem = useUpdateCartItem();
   const removeItem = useRemoveCartItem();
   const clearCart = useClearCart();
@@ -128,6 +128,26 @@ export default function CartScreen() {
     return (
       <View style={[styles.center, { backgroundColor: colors.background, paddingTop: topInset }]}>
         <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View style={[styles.center, { backgroundColor: colors.background, paddingTop: topInset }]}>
+        <Feather name="wifi-off" size={48} color={colors.mutedForeground} />
+        <Text style={[styles.errorTitle, { color: colors.foreground }]}>Couldn't load your cart</Text>
+        <Text style={[styles.errorSubtitle, { color: colors.mutedForeground }]}>
+          Check your connection and try again
+        </Text>
+        <TouchableOpacity
+          style={[styles.retryBtn, { borderColor: colors.border }]}
+          onPress={() => refetch()}
+          activeOpacity={0.75}
+        >
+          <Feather name="refresh-cw" size={14} color={colors.primary} />
+          <Text style={[styles.retryBtnText, { color: colors.primary }]}>Try again</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -297,7 +317,20 @@ function makeStyles(colors: ReturnType<typeof import('@/hooks/useColors').useCol
       marginTop: 8,
     },
     signInBtnText: { fontSize: 16, fontFamily: FONT_SEMIBOLD },
-    center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
+    errorTitle: { fontSize: 18, fontFamily: FONT_BOLD, textAlign: 'center' },
+    errorSubtitle: { fontSize: 14, fontFamily: FONT_REGULAR, textAlign: 'center', paddingHorizontal: 32 },
+    retryBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      borderWidth: 1,
+      borderRadius: colors.radius,
+      paddingHorizontal: 20,
+      paddingVertical: 9,
+      marginTop: 4,
+    },
+    retryBtnText: { fontSize: 14, fontFamily: FONT_SEMIBOLD },
     header: {
       flexDirection: 'row',
       alignItems: 'center',

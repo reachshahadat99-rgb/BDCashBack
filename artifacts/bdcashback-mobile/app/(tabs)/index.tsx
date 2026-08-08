@@ -36,7 +36,7 @@ export default function ShopScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
   const [refreshing, setRefreshing] = useState(false);
 
-  const { data: summary, isLoading: summaryLoading, refetch: refetchSummary } =
+  const { data: summary, isLoading: summaryLoading, isError: summaryError, refetch: refetchSummary } =
     useGetMarketplaceSummary();
   const { data: walletData } = useGetWalletSummary({ query: { enabled: !!isSignedIn, queryKey: getGetWalletSummaryQueryKey() } });
   const {
@@ -221,12 +221,33 @@ export default function ShopScreen() {
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
+      ) : summaryError && !summary ? (
+        <View style={styles.center}>
+          <Feather name="wifi-off" size={48} color={colors.mutedForeground} />
+          <Text style={[styles.errorTitle, { color: colors.foreground }]}>Couldn't load the shop</Text>
+          <Text style={[styles.errorSubtitle, { color: colors.mutedForeground }]}>
+            Check your connection and try again
+          </Text>
+          <TouchableOpacity
+            onPress={() => { refetchSummary(); refetchProducts(); }}
+            style={[styles.retryBtn, { borderColor: colors.border }]}
+            activeOpacity={0.75}
+          >
+            <Feather name="refresh-cw" size={14} color={colors.primary} />
+            <Text style={[styles.retryBtnText, { color: colors.primary }]}>Try again</Text>
+          </TouchableOpacity>
+        </View>
       ) : productsError ? (
         <View style={styles.center}>
           <Feather name="alert-circle" size={40} color={colors.mutedForeground} />
-          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Failed to load products</Text>
-          <TouchableOpacity onPress={() => refetchProducts()} style={[styles.retryBtn, { borderColor: colors.border }]}>
-            <Text style={{ color: colors.primary, fontFamily: FONT_SEMIBOLD }}>Retry</Text>
+          <Text style={[styles.errorTitle, { color: colors.foreground }]}>Failed to load products</Text>
+          <TouchableOpacity
+            onPress={() => refetchProducts()}
+            style={[styles.retryBtn, { borderColor: colors.border }]}
+            activeOpacity={0.75}
+          >
+            <Feather name="refresh-cw" size={14} color={colors.primary} />
+            <Text style={[styles.retryBtnText, { color: colors.primary }]}>Try again</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -360,11 +381,17 @@ function makeStyles(colors: ReturnType<typeof import('@/hooks/useColors').useCol
     addBtnText: { fontSize: 13, fontFamily: FONT_SEMIBOLD },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60, gap: 12 },
     emptyText: { fontSize: 15, fontFamily: FONT_MEDIUM },
+    errorTitle: { fontSize: 18, fontFamily: FONT_BOLD, textAlign: 'center', color: colors.foreground },
+    errorSubtitle: { fontSize: 14, fontFamily: FONT_REGULAR, textAlign: 'center', paddingHorizontal: 32, color: colors.mutedForeground },
     retryBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
       borderWidth: 1,
       borderRadius: colors.radius,
       paddingHorizontal: 20,
-      paddingVertical: 8,
+      paddingVertical: 9,
     },
+    retryBtnText: { fontSize: 14, fontFamily: FONT_SEMIBOLD, color: colors.primary },
   });
 }
