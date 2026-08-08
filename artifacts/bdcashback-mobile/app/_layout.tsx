@@ -4,7 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { ClerkProvider, ClerkLoaded, useAuth, useUser } from '@clerk/expo';
+import { ClerkProvider, ClerkLoaded } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import {
   PlusJakartaSans_400Regular,
@@ -15,8 +15,8 @@ import {
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { setBaseUrl, setAuthTokenGetter } from '@workspace/api-client-react';
-import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { setBaseUrl } from '@workspace/api-client-react';
+import { useAuthTokenWiring } from '@/hooks/useAuthTokenWiring';
 
 // Set the API base URL at module level — Expo bundles run outside the web proxy.
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
@@ -33,24 +33,7 @@ const proxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
 
 /** Sets the bearer-token getter and clears the query cache on user changes. */
 function AuthTokenSetter() {
-  const { getToken, isSignedIn } = useAuth();
-  const { user } = useUser();
-
-  // Wire bearer token for every API call
-  useEffect(() => {
-    setAuthTokenGetter(() => getToken());
-  }, [getToken]);
-
-  // Clear ALL cached queries when user identity changes (sign-in, sign-out,
-  // or switch of account) to prevent stale data leaking between sessions.
-  const userId = user?.id ?? null;
-  useEffect(() => {
-    queryClient.clear();
-  }, [userId]);
-
-  // Register for push notifications when signed in
-  usePushNotifications(!!isSignedIn);
-
+  useAuthTokenWiring(queryClient);
   return null;
 }
 
