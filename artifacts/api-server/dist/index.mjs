@@ -71494,47 +71494,40 @@ async function runStartupMigrations() {
 }
 
 // src/index.ts
-await runStartupMigrations();
 var rawPort = process.env["PORT"];
 if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided."
-  );
+  throw new Error("PORT environment variable is required but was not provided.");
 }
 var port = Number(rawPort);
 if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
-app_default.listen(port, (err) => {
-  if (err) {
-    logger.error({ err }, "Error listening on port");
-    process.exit(1);
-  }
+app_default.listen(port, () => {
   logger.info({ port }, "Server listening");
-  const runRelease = () => {
-    releaseMatureCashback().then((count2) => {
-      if (count2 > 0) {
-        logger.info({ count: count2 }, "Released mature cashback");
-      }
-    }).catch((err2) => {
-      logger.error({ err: err2 }, "Failed to release mature cashback");
-    });
-  };
-  setTimeout(runRelease, 1e4);
-  const HOUR_MS = 60 * 60 * 1e3;
-  setInterval(runRelease, HOUR_MS);
-  const runGroupBuySettlement = () => {
-    processExpiredGroupBuyCampaigns().then((count2) => {
-      if (count2 > 0) {
-        logger.info({ count: count2 }, "Settled expired group buy campaigns");
-      }
-    }).catch((err2) => {
-      logger.error({ err: err2 }, "Failed to settle group buy campaigns");
-    });
-  };
-  setTimeout(runGroupBuySettlement, 15e3);
-  const FIFTEEN_MIN_MS = 15 * 60 * 1e3;
-  setInterval(runGroupBuySettlement, FIFTEEN_MIN_MS);
+  runStartupMigrations().then(() => {
+    const runRelease = () => {
+      releaseMatureCashback().then((count2) => {
+        if (count2 > 0) logger.info({ count: count2 }, "Released mature cashback");
+      }).catch((err) => {
+        logger.error({ err }, "Failed to release mature cashback");
+      });
+    };
+    setTimeout(runRelease, 1e4);
+    setInterval(runRelease, 60 * 60 * 1e3);
+    const runGroupBuySettlement = () => {
+      processExpiredGroupBuyCampaigns().then((count2) => {
+        if (count2 > 0)
+          logger.info({ count: count2 }, "Settled expired group buy campaigns");
+      }).catch((err) => {
+        logger.error({ err }, "Failed to settle group buy campaigns");
+      });
+    };
+    setTimeout(runGroupBuySettlement, 15e3);
+    setInterval(runGroupBuySettlement, 15 * 60 * 1e3);
+  }).catch((err) => {
+    logger.error({ err }, "Startup migration failed \u2014 exiting");
+    process.exit(1);
+  });
 });
 /*! Bundled license information:
 
