@@ -1,6 +1,20 @@
-import { Router, type IRouter } from "express";
-import { getAuth } from "@clerk/express";
+import { Router, type IRouter, type Request } from "express";
+import jwt from "jsonwebtoken";
 import { requireAuth } from "../middleware/auth";
+
+/** Extract userId from Bearer token without requiring auth (returns null if absent/invalid). */
+function optionalUserId(req: Request): string | null {
+  const header = req.headers.authorization;
+  if (!header?.startsWith("Bearer ")) return null;
+  try {
+    const secret = process.env.SESSION_SECRET;
+    if (!secret) return null;
+    const payload = jwt.verify(header.slice(7), secret) as { userId: string };
+    return payload.userId ?? null;
+  } catch {
+    return null;
+  }
+}
 import { money } from "../lib/money";
 import {
   CreateMerchantGroupBuyBody,
@@ -26,7 +40,7 @@ const router: IRouter = Router();
 
 router.get("/group-buys", async (req, res): Promise<void> => {
   await ensureGroupBuySeeded();
-  const userId = getAuth(req).userId;
+  const userId = optionalUserId(req);
 
   const deals = await db.select().from(groupBuyDealsTable);
   const counts = await db

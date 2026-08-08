@@ -1,5 +1,5 @@
 import { Router, type IRouter, type RequestHandler } from "express";
-import { getAuth } from "@clerk/express";
+import { requireAuth as jwtRequireAuth } from "../middleware/auth";
 import {
   GetMarketplaceSummaryResponse,
   GetWalletSummaryResponse,
@@ -21,15 +21,7 @@ import {
 
 const router: IRouter = Router();
 
-const requireAuth: RequestHandler = (req, res, next) => {
-  const userId = getAuth(req).userId;
-  if (!userId) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
-  res.locals.userId = userId;
-  next();
-};
+const requireAuth: RequestHandler = jwtRequireAuth;
 
 router.get("/marketplace/summary", async (req, res): Promise<void> => {
   await ensureMarketplaceSeeded();
